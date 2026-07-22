@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.3.1 — 2026-07-22
+
+- Rebuilt and repackaged the current verified Qwen-independent-advice build.
+- Kept the public credential boundary and the v1.3.0 local-verification flow.
+
 ## v1.3.0 — 2026-07-22
 
 - Added independent Qwen advice: Qwen proposes up to three styles before a

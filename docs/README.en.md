@@ -10,13 +10,13 @@ A quiet macOS menu-bar companion for Chinese-chess study: select a board window,
 
 [简体中文](../README.md) · **English** · [日本語](README.ja.md)
 
-[Download v1.3.0](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest) · [One-minute setup](#one-minute-setup) · [How it works](#from-one-frame-to-one-recommendation) · [Star the project](https://github.com/sunqinji666-dotcom/xiangqi-assistant)
+[Download v1.3.1](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest) · [One-minute setup](#one-minute-setup) · [How it works](#from-one-frame-to-one-recommendation) · [Star the project](https://github.com/sunqinji666-dotcom/xiangqi-assistant)
 
 </div>
 
 | Stable release | Platform | Runtime model | License | Last verified |
 |---|---|---|---|---|
-| v1.3.0 · Build 4 | macOS 14+ · Apple Silicon | Menu bar · Local-first | MIT; third-party exceptions | 2026-07-22 |
+| v1.3.1 · Build 5 | macOS 14+ · Apple Silicon | Menu bar · Local-first | MIT; third-party exceptions | 2026-07-22 |
 
 ## A chess game needs clarity, not more noise
 
@@ -72,7 +72,7 @@ The bundled opening book is offline, read-only, legality-checked, and carries pr
 
 ## One-minute setup
 
-1. Download `XiangqiAssistant-v1.3.0-macOS-arm64.zip` from [Releases](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest).
+1. Download `XiangqiAssistant-v1.3.1-macOS-arm64.zip` from [Releases](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest).
 2. Unzip it and move `象棋助手-TheOne.app` to Applications.
 3. If macOS blocks the first launch, right-click the app in Finder and choose **Open**.
 4. In **System Settings → Privacy & Security → Screen Recording**, allow the app to read the selected window.
