@@ -31,6 +31,12 @@ enum AnalysisMode: String, CaseIterable {
     }
 }
 
+enum BoardSquareCorrection: Equatable {
+    case followRecognition
+    case empty
+    case piece(Piece)
+}
+
 // MARK: - View Model
 
 @MainActor
@@ -73,8 +79,27 @@ class AssistantViewModel: ObservableObject {
         }
     }
     @Published var recommendedSide: PieceSide? = nil
-    @Published var analysisMode: AnalysisMode = .ultra
+    /// The side that is actually due to move in the currently tracked game.
+    /// It is deliberately separate from `playerSide`: a user can play Black
+    /// while Red is due to move (and vice versa).
+    @Published var currentTurnSide: PieceSide = AssistantViewModel.savedCurrentTurnSide {
+        didSet {
+            UserDefaults.standard.set(
+                currentTurnSide == .red ? "red" : "black",
+                forKey: Self.currentTurnSideDefaultsKey
+            )
+        }
+    }
+    @Published var analysisMode: AnalysisMode = AssistantViewModel.savedAnalysisMode {
+        didSet {
+            UserDefaults.standard.set(
+                analysisMode.rawValue,
+                forKey: Self.analysisModeDefaultsKey
+            )
+        }
+    }
     var playerSideLabel: String { playerSide == .red ? "红方" : "黑方" }
+    var currentTurnLabel: String { currentTurnSide == .red ? "红方" : "黑方" }
 
     // Callbacks wired by AppDelegate
     var onToggleAnalysis: (() -> Void)?
@@ -84,24 +109,42 @@ class AssistantViewModel: ObservableObject {
     var onSelectBoard: (() -> Void)?
     var onClearBoard: (() -> Void)?
     var onPlayerSideChanged: ((PieceSide) -> Void)?
+    var onTurnSideChanged: ((PieceSide) -> Void)?
     var onAnalysisModeChanged: ((AnalysisMode) -> Void)?
+    var onResyncPosition: (() -> Void)?
+    var onCorrectBoardSquare: ((BoardPosition, BoardSquareCorrection) -> Void)?
+    var onFlipBoard: (() -> Void)?
     @Published var hasBoardGeometry: Bool = false
+    @Published var needsPositionResync: Bool = false
     /// Temporary on-panel capture diagnostic used when a board cannot be
     /// recognized. It stays inside the app and is never written or sent.
     @Published var diagnosticCapture: NSImage? = nil
 
     private static let playerSideDefaultsKey = "xiangqiAssistant.playerSide"
+    private static let currentTurnSideDefaultsKey = "xiangqiAssistant.currentTurnSide"
+    private static let analysisModeDefaultsKey = "xiangqiAssistant.analysisMode"
     private static var savedPlayerSide: PieceSide {
         UserDefaults.standard.string(forKey: playerSideDefaultsKey) == "black"
             ? .black
             : .red
     }
+    private static var savedCurrentTurnSide: PieceSide {
+        UserDefaults.standard.string(forKey: currentTurnSideDefaultsKey) == "black"
+            ? .black
+            : .red
+    }
+    private static var savedAnalysisMode: AnalysisMode {
+        guard let rawValue = UserDefaults.standard.string(forKey: analysisModeDefaultsKey)
+        else { return .ultra }
+        return AnalysisMode(rawValue: rawValue) ?? .ultra
+    }
 
     enum AssistantStatus {
-        case idle, capturing, analyzing, stable, unstable, error
+        case idle, needsBoardSelection, capturing, analyzing, stable, unstable, error
         var color: Color {
             switch self {
             case .idle:      return .gray
+            case .needsBoardSelection: return .orange
             case .capturing: return .yellow
             case .analyzing: return .blue
             case .stable:    return .green
@@ -112,6 +155,7 @@ class AssistantViewModel: ObservableObject {
         var label: String {
             switch self {
             case .idle:      return "未启动"
+            case .needsBoardSelection: return "请框选棋盘"
             case .capturing: return "识别中"
             case .analyzing: return "分析中"
             case .stable:    return "就绪"
@@ -176,7 +220,7 @@ struct AssistantView: View {
                 footerBar
             }
         }
-        .frame(width: 300)
+        .frame(width: 300, height: 456)
         .fixedSize(horizontal: true, vertical: false)
     }
 
@@ -362,13 +406,11 @@ struct AssistantView: View {
     private var footerBar: some View {
         VStack(spacing: 0) {
             // Window picker row
-            HStack(spacing: 6) {
-                Image(systemName: "person.fill")
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-                Text("我方")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+            HStack(spacing: 8) {
+                VStack(spacing: 2) {
+                    Label("我方", systemImage: "person.fill")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
                 Menu {
                     Button("红方") {
                         vm.playerSide = .red
@@ -379,22 +421,52 @@ struct AssistantView: View {
                         vm.onPlayerSideChanged?(.black)
                     }
                 } label: {
-                    Text(vm.playerSideLabel)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    Image(systemName: "chevron.up.chevron.down")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
+                        HStack(spacing: 3) {
+                            Text(vm.playerSideLabel)
+                                .lineLimit(1)
+                            Image(systemName: "chevron.up.chevron.down")
+                                .foregroundStyle(.tertiary)
+                        }
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(vm.playerSide == .red ? .red : .primary)
+                        .frame(maxWidth: .infinity)
                 }
                 .menuStyle(.borderlessButton)
-                Spacer()
+                }
+                .frame(maxWidth: .infinity)
 
-                Image(systemName: vm.analysisMode.icon)
-                    .font(.caption2)
-                    .foregroundStyle(vm.analysisMode.accent)
-                Text("棋风")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                VStack(spacing: 2) {
+                    Text("轮到")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                Menu {
+                    Button("红方走") {
+                        vm.currentTurnSide = .red
+                        vm.onTurnSideChanged?(.red)
+                    }
+                    Button("黑方走") {
+                        vm.currentTurnSide = .black
+                        vm.onTurnSideChanged?(.black)
+                    }
+                } label: {
+                        HStack(spacing: 3) {
+                            Text(vm.currentTurnLabel)
+                                .lineLimit(1)
+                            Image(systemName: "chevron.up.chevron.down")
+                                .foregroundStyle(.tertiary)
+                        }
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(vm.currentTurnSide == .red ? .red : .primary)
+                        .frame(maxWidth: .infinity)
+                }
+                .menuStyle(.borderlessButton)
+                }
+                .frame(maxWidth: .infinity)
+
+                VStack(spacing: 2) {
+                    Label("棋风", systemImage: vm.analysisMode.icon)
+                        .font(.caption2)
+                        .foregroundStyle(vm.analysisMode.accent)
                 Menu {
                     Button("超强 · 最高胜率") {
                         vm.analysisMode = .ultra
@@ -409,14 +481,19 @@ struct AssistantView: View {
                         vm.onAnalysisModeChanged?(.normal)
                     }
                 } label: {
-                    Text(vm.analysisMode.label)
+                        HStack(spacing: 3) {
+                            Text(vm.analysisMode.label)
+                                .lineLimit(1)
+                            Image(systemName: "chevron.up.chevron.down")
+                                .foregroundStyle(.tertiary)
+                        }
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(vm.analysisMode.accent)
-                    Image(systemName: "chevron.up.chevron.down")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
+                        .frame(maxWidth: .infinity)
                 }
                 .menuStyle(.borderlessButton)
+                }
+                .frame(maxWidth: .infinity)
             }
             .padding(.horizontal, 14)
             .padding(.top, 6)
@@ -482,7 +559,21 @@ struct AssistantView: View {
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
                 Spacer()
-                if let err = vm.errorMessage {
+                if vm.needsPositionResync {
+                    Button {
+                        vm.onResyncPosition?()
+                    } label: {
+                        Label("重新同步", systemImage: "arrow.triangle.2.circlepath")
+                            .font(.caption2.weight(.semibold))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.orange.opacity(0.18))
+                            .foregroundStyle(.orange)
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .help("保留框选与识别设置，重新确认当前棋局")
+                } else if let err = vm.errorMessage {
                     Text(err)
                         .font(.caption2)
                         .foregroundStyle(.red.opacity(0.7))

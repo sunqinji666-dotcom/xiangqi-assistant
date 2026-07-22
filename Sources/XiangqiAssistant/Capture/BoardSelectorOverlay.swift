@@ -11,14 +11,16 @@ class BoardSelectorOverlay: NSObject {
     var onGeometry: ((BoardGeometry) -> Void)?
     var onCancel: (() -> Void)?
 
-    private var overlayWindow: NSWindow?
+    private var overlayWindows: [NSWindow] = []
 
     // MARK: Show / Hide
 
     func show(displayID: UInt32? = nil) {
-        // Prefer the display containing the selected capture window. Falling
-        // back to the pointer still supports explicit full-screen capture.
-        let pointer = NSEvent.mouseLocation
+        dismiss()
+        // A selected window can move between displays while ScreenCaptureKit
+        // still exposes its previous display metadata. Put a selector on every
+        // attached screen so the user's drag is always received on the screen
+        // where the board is actually visible.
         let requestedScreen = displayID.flatMap { requestedDisplayID in
             NSScreen.screens.first { screen in
                 (screen.deviceDescription[
@@ -26,50 +28,54 @@ class BoardSelectorOverlay: NSObject {
                 ] as? NSNumber)?.uint32Value == requestedDisplayID
             }
         }
-        guard let screen = requestedScreen
-            ?? NSScreen.screens.first(where: { $0.frame.contains(pointer) })
-            ?? NSScreen.main
-        else { return }
+        var screens = NSScreen.screens
+        if let requestedScreen,
+           let index = screens.firstIndex(of: requestedScreen) {
+            screens.remove(at: index)
+            screens.insert(requestedScreen, at: 0)
+        }
+        guard !screens.isEmpty else { return }
 
-        let selectorView = SelectorView()
-        selectorView.onSelection = { [weak self] selectedRect in
-            self?.dismiss()
-            // selectedRect is in NSView coords (bottom-left origin, relative to screen)
-            // Convert the drag rect (which is the board AREA) into two corner points.
-            // topLeft  = macOS-coord top-left of rect  = (minX, maxY)
-            // bottomRight = macOS-coord bottom-right   = (maxX, minY)
-            let geo = BoardGeometry(
-                topLeft:     CGPoint(x: selectedRect.minX, y: selectedRect.maxY),
-                bottomRight: CGPoint(x: selectedRect.maxX, y: selectedRect.minY),
-                screenFrame: screen.frame,
-                displayID: (screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value,
-                windowNormalizedRect: nil
+        for screen in screens {
+            let selectorView = SelectorView()
+            selectorView.onSelection = { [weak self] selectedRect in
+                self?.dismiss()
+                let geo = BoardGeometry(
+                    topLeft: CGPoint(x: selectedRect.minX, y: selectedRect.maxY),
+                    bottomRight: CGPoint(x: selectedRect.maxX, y: selectedRect.minY),
+                    screenFrame: screen.frame,
+                    displayID: (screen.deviceDescription[
+                        NSDeviceDescriptionKey("NSScreenNumber")
+                    ] as? NSNumber)?.uint32Value,
+                    windowNormalizedRect: nil
+                )
+                self?.onGeometry?(geo)
+            }
+            selectorView.onCancel = { [weak self] in
+                self?.dismiss()
+                self?.onCancel?()
+            }
+
+            let window = NSWindow(
+                contentRect: screen.frame,
+                styleMask: [.borderless],
+                backing: .buffered,
+                defer: false
             )
-            self?.onGeometry?(geo)
+            window.isOpaque = false
+            window.backgroundColor = .clear
+            window.level = .screenSaver
+            window.ignoresMouseEvents = false
+            window.contentView = selectorView
+            window.orderFrontRegardless()
+            overlayWindows.append(window)
         }
-        selectorView.onCancel = { [weak self] in
-            self?.dismiss()
-            self?.onCancel?()
-        }
-
-        let window = NSWindow(
-            contentRect: screen.frame,
-            styleMask:   [.borderless],
-            backing:     .buffered,
-            defer:       false
-        )
-        window.isOpaque          = false
-        window.backgroundColor   = .clear
-        window.level             = .screenSaver
-        window.ignoresMouseEvents = false
-        window.contentView       = selectorView
-        window.makeKeyAndOrderFront(nil)
-        overlayWindow = window
+        overlayWindows.first?.makeKeyAndOrderFront(nil)
     }
 
     func dismiss() {
-        overlayWindow?.orderOut(nil)
-        overlayWindow = nil
+        overlayWindows.forEach { $0.orderOut(nil) }
+        overlayWindows.removeAll(keepingCapacity: false)
     }
 }
 
@@ -82,6 +88,37 @@ private class SelectorView: NSView {
 
     private var startPoint: CGPoint?
     private var selectionRect: CGRect?
+    private lazy var confirmButton: NSButton = {
+        let button = NSButton(title: "确认保存", target: self,
+                              action: #selector(confirmSelection))
+        button.bezelStyle = .rounded
+        button.controlSize = .large
+        button.font = .systemFont(ofSize: 16, weight: .semibold)
+        button.isHidden = true
+        button.translatesAutoresizingMaskIntoConstraints = false
+        return button
+    }()
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        installConfirmationButton()
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        installConfirmationButton()
+    }
+
+    private func installConfirmationButton() {
+        addSubview(confirmButton)
+        NSLayoutConstraint.activate([
+            confirmButton.centerXAnchor.constraint(equalTo: centerXAnchor),
+            confirmButton.bottomAnchor.constraint(equalTo: bottomAnchor,
+                                                   constant: -36),
+            confirmButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 128),
+            confirmButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 40)
+        ])
+    }
 
     // MARK: Drawing
 
@@ -107,7 +144,7 @@ private class SelectorView: NSView {
             drawDot(at: CGPoint(x: rect.maxX, y: rect.minY), color: .systemBlue)  // bottom-right
 
             // Instruction label
-            drawLabel("松开鼠标确认选择   Esc 取消",
+            drawLabel("框选完成后，点击下方「确认保存」   Esc 取消",
                       at: CGPoint(x: rect.midX, y: rect.midY))
         } else {
             drawLabel("拖动鼠标框选棋盘区域   Esc 取消",
@@ -142,6 +179,7 @@ private class SelectorView: NSView {
     override func mouseDown(with event: NSEvent) {
         startPoint = convert(event.locationInWindow, from: nil)
         selectionRect = nil
+        confirmButton.isHidden = true
         needsDisplay = true
     }
 
@@ -159,18 +197,30 @@ private class SelectorView: NSView {
 
     override func mouseUp(with event: NSEvent) {
         guard let rect = selectionRect, rect.width > 20, rect.height > 20 else {
-            selectionRect = nil; needsDisplay = true; return
+            selectionRect = nil
+            confirmButton.isHidden = true
+            needsDisplay = true
+            return
         }
-        // Convert NSView rect to screen rect
-        if let screenRect = window?.convertToScreen(rect) {
-            onSelection?(screenRect)
-        }
+        startPoint = nil
+        confirmButton.isHidden = false
+        needsDisplay = true
+    }
+
+    @objc private func confirmSelection() {
+        guard let rect = selectionRect,
+              let screenRect = window?.convertToScreen(rect)
+        else { return }
+        onSelection?(screenRect)
     }
 
     // MARK: Keyboard
 
     override func keyDown(with event: NSEvent) {
         if event.keyCode == 53 { onCancel?() }  // Esc
+        if event.keyCode == 36, !confirmButton.isHidden { // Return
+            confirmSelection()
+        }
     }
 
     override var acceptsFirstResponder: Bool { true }

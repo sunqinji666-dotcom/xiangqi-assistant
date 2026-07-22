@@ -1,6 +1,6 @@
 # XiangqiAssistant
 
-![XiangqiAssistant v1.1 concept artwork: local board recognition followed by deep engine analysis](assets/xiangqi-assistant-hero-v2.png)
+![XiangqiAssistant concept artwork: local board recognition followed by deep engine analysis](assets/xiangqi-assistant-hero-v2.png)
 
 <div align="center">
 
@@ -10,13 +10,13 @@ A quiet macOS menu-bar companion for Chinese-chess study: select a board window,
 
 [简体中文](../README.md) · **English** · [日本語](README.ja.md)
 
-[Download v1.1.0](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest) · [One-minute setup](#one-minute-setup) · [How it works](#from-one-frame-to-one-recommendation) · [Star the project](https://github.com/sunqinji666-dotcom/xiangqi-assistant)
+[Download v1.2.0](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest) · [One-minute setup](#one-minute-setup) · [How it works](#from-one-frame-to-one-recommendation) · [Star the project](https://github.com/sunqinji666-dotcom/xiangqi-assistant)
 
 </div>
 
 | Stable release | Platform | Runtime model | License | Last verified |
 |---|---|---|---|---|
-| v1.1.0 · Build 2 | macOS 14+ · Apple Silicon | Menu bar · Local-first | MIT; third-party exceptions | 2026-07-23 |
+| v1.2.0 · Build 3 | macOS 14+ · Apple Silicon | Menu bar · Local-first | MIT; third-party exceptions | 2026-07-23 |
 
 ## A chess game needs clarity, not more noise
 
@@ -26,7 +26,20 @@ XiangqiAssistant turns that gap into a visible local pipeline. You explicitly ch
 
 It is not an automatic player. It behaves more like a quiet analyst beside the board: direction first, stronger evidence next.
 
-## What v1.1.0 changes
+## v1.2.0: recognition that can follow a whole game
+
+This release turns calibration and recognition into durable state instead of a fragile one-time setup.
+
+- **Per-client board memory:** every chess application keeps its own window-relative board crop.
+- **Confirmed multi-display selection:** selection overlays cover every display, and a crop is saved only after explicit confirmation.
+- **Five-frame, per-square voting:** each of the 90 intersections reaches consensus independently, so one animated highlight cannot block the whole board.
+- **Locked orientation with manual flip:** transient model noise cannot rotate the board mid-game, while the user can still flip it deliberately.
+- **Human correction:** any square can be corrected or returned to automatic recognition; the side to move can also be synchronized manually.
+- **Targeted resync:** tracked game state can be rebuilt without losing permissions, window choice, calibration, models, or the visible preview.
+- **Trusted-board restore:** the last valid board is stored per capture source; Pause → Start still forces a genuinely fresh scan.
+- **Recognition stays independent:** a slow or recovering Pikafish search no longer makes a trusted board look unrecognized.
+
+## What v1.1.0 changed
 
 ### An early answer that remains open to correction
 
@@ -48,7 +61,7 @@ The bundled opening book is offline, read-only, legality-checked, and carries pr
 
 ## One-minute setup
 
-1. Download `XiangqiAssistant-v1.1.0-macOS-arm64.zip` from [Releases](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest).
+1. Download `XiangqiAssistant-v1.2.0-macOS-arm64.zip` from [Releases](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest).
 2. Unzip it and move `象棋助手-TheOne.app` to Applications.
 3. If macOS blocks the first launch, right-click the app in Finder and choose **Open**.
 4. In **System Settings → Privacy & Security → Screen Recording**, allow the app to read the selected window.
@@ -104,6 +117,7 @@ These values are configured search budgets, not a performance guarantee for ever
 | Position recognition | TheOne1006 10×9, 16-class layout model |
 | Inference runtime | Microsoft ONNX Runtime 1.24.2 |
 | Position model | Legality checks, viewpoint canonicalization, FEN, and revision identity |
+| Recognition continuity | Per-square temporal voting, orientation lock, manual correction, per-source restore |
 | Engine | Pikafish as a separate local process over asynchronous UCI |
 | Search resilience | Wall-clock timeouts, EOF/process recovery, stop-and-drain cancellation, terminal handling |
 | Local knowledge | Provenance-carrying, legality-checked opening book with engine verification |
@@ -113,8 +127,10 @@ These values are configured search budgets, not a performance guarantee for ever
 ### Supported today
 
 - User-selected window capture, refresh, and continuous observation;
-- automatic board localization plus window-relative manual calibration across displays;
-- canonicalization of normal and opposite board viewpoints;
+- automatic board localization plus confirmed, window-relative calibration across displays;
+- separate board crops and trusted-board snapshots for different chess clients;
+- canonicalization, session orientation lock, and manual board flipping;
+- per-square correction, automatic restore, turn synchronization, and position resync;
 - stability protection, FEN generation, and position history;
 - Normal, Aggressive, and Ultra local analysis modes;
 - Chinese notation, red-perspective score, depth, mate distance, and principal variation;
@@ -151,7 +167,7 @@ xcodebuild \
   CODE_SIGNING_ALLOWED=NO build
 ```
 
-`Tests/BrainLogicHarness.swift` exercises window filtering, viewpoint canonicalization, score and mate perspective, recommendation stability, opening-book legality, terminal engine states, wall-clock timeout, cancellation, and search replacement. It is a focused logic harness, not a complete UI automation suite.
+`Tests/BrainLogicHarness.swift` exercises window filtering, viewpoint canonicalization, temporal board consensus, score and mate perspective, recommendation stability, opening-book legality, terminal engine states, wall-clock timeout, cancellation, and search replacement. It is a focused logic harness, not a complete UI automation suite.
 
 ## Repository map
 
@@ -170,7 +186,7 @@ Sources/XiangqiAssistant/
 Release packages and checksums are published on [GitHub Releases](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest).
 
 ```bash
-shasum -a 256 -c XiangqiAssistant-v1.1.0-macOS-arm64.zip.sha256
+shasum -a 256 -c XiangqiAssistant-v1.2.0-macOS-arm64.zip.sha256
 ```
 
 Do not run a package if its filename, size, or digest differs from the Release page.

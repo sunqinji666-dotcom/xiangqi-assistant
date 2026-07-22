@@ -47,7 +47,7 @@ class CalibrationManager: ObservableObject {
         }
 
         // 2. Locate and crop the board
-        guard let (boardImage, cells) = await recognizer.extractBoardAndCells(from: image) else {
+        guard let (_, cells) = await recognizer.extractBoardAndCells(from: image) else {
             state = .failed("未能找到棋盘。请确保棋盘完整显示在屏幕上，没有被其他窗口遮挡")
             return
         }

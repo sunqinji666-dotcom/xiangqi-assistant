@@ -6,9 +6,15 @@ import SwiftUI
 /// An NSPanel that floats above all windows and never steals keyboard focus.
 class FloatingPanel: NSPanel {
 
+    private static let interfaceScale: CGFloat = 1.2
+    private static let panelSize = NSSize(
+        width: 626 * interfaceScale,
+        height: 472 * interfaceScale
+    )
+
     init(contentView: some View) {
         super.init(
-            contentRect: NSRect(x: 0, y: 0, width: 620, height: 420),
+            contentRect: NSRect(origin: .zero, size: Self.panelSize),
             styleMask: [
                 .borderless,
                 .nonactivatingPanel,
@@ -25,7 +31,12 @@ class FloatingPanel: NSPanel {
         hidesOnDeactivate = false
         hasShadow = true
 
-        let hostingView = NSHostingView(rootView: contentView)
+        let hostingView = NSHostingView(
+            rootView: contentView
+                .scaleEffect(Self.interfaceScale)
+                .frame(width: Self.panelSize.width,
+                       height: Self.panelSize.height)
+        )
         hostingView.wantsLayer = true
         hostingView.layer?.cornerRadius = 16
         hostingView.layer?.masksToBounds = true
@@ -33,7 +44,7 @@ class FloatingPanel: NSPanel {
 
         // Position: bottom-right of main screen
         if let screen = NSScreen.main {
-            let x = screen.visibleFrame.maxX - 640
+            let x = screen.visibleFrame.maxX - Self.panelSize.width - 20
             let y = screen.visibleFrame.minY + 40
             setFrameOrigin(NSPoint(x: x, y: y))
         }

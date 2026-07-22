@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.2.0 — 2026-07-23
+
+- Added durable per-application board geometry, with a legacy recovery copy and
+  independent calibration for every selected chess client.
+- Added multi-display board selection with an explicit confirmation step and
+  safer clipping when a piece edge sits slightly outside the visible window.
+- Added five-frame, per-square temporal voting so a moving highlight or one
+  flickering cell cannot block an otherwise stable board.
+- Added session-locked board orientation, manual board flipping, per-square
+  piece correction, automatic-restore controls, turn synchronization, and a
+  deliberate position-resync action.
+- Added per-source persistence for the most recent trusted board, while keeping
+  Pause → Start as a hard fresh-scan boundary.
+- Decoupled recognition status from engine retries so a slow or recovering
+  Pikafish search no longer looks like a board-recognition failure.
+- Improved saved-crop recovery when responsive chess clients resize their board,
+  and added regression coverage for temporal consensus.
+
 ## v1.1.0 — 2026-07-23
 
 - Added an adaptive Ultra search pipeline: a 2-second answer, 6-second normal

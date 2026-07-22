@@ -30,6 +30,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let positionKeys: [String]
     }
 
+    private struct SavedBoardSnapshot: Codable {
+        let board: BoardState
+        let isReversed: Bool
+    }
+
+    private static let savedBoardSnapshotsKey =
+        "xiangqiAssistant.savedBoardSnapshots.v1"
+
     private var statusItem: NSStatusItem?
     private let vm = AssistantViewModel()
     private let engine = PikafishEngine()
@@ -62,11 +70,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var ponderHint: PonderHint?
     private var calibrationObserver: AnyCancellable?
     private var lastConfirmedBoard: BoardState?
+    /// Most recent complete board produced by the screenshot recognizer before
+    /// any user overrides. “恢复自动” reads from this clean source instead of
+    /// from an already edited trusted board.
+    private var latestRawRecognizedBoard: BoardState?
     private var currentSideToMove: PieceSide = .red
-    private var candidateBoard: BoardState?
-    private var candidateCount = 0
-    private var candidatePlies = 0
-    private var consecutiveBadFrames = 0
+    /// Short rolling sample used throughout the game for per-square voting.
+    private var baselineObservations: [BoardState] = []
+    private var baselineOrientationVotes: [Bool] = []
+    /// The visible board orientation is a session property, not a per-frame
+    /// recognition result. Once a fresh scan establishes it, transient model
+    /// noise, move highlights and animations must never flip the preview in
+    /// the middle of a game.
+    private var lockedPreviewIsReversed: Bool?
     private var forceEngineRefresh = false
     private var historyFromStart = false
     private var observedMoves: [(side: PieceSide, move: UCIMove)] = []
@@ -77,6 +93,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var wizardMoveRows: [Int: String] = [:]
     private var lastCaptureDiagnosticAt = Date.distantPast
     private var pendingBoardSelectionSourceKey: String?
+    private enum ManualSquareOverride {
+        case empty
+        case piece(Piece)
+    }
+    /// Session-local user corrections. They intentionally outrank every
+    /// screenshot until the user chooses “恢复自动识别” for that square.
+    private var manualSquareOverrides: [BoardPosition: ManualSquareOverride] = [:]
 
     // MARK: Launch
 
@@ -98,14 +121,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         vm.onRefreshWindows = { [weak self] in
             Task { @MainActor [weak self] in
                 guard let self else { return }
-                let previousWindowID = self.captureManager.selectedWindowID
                 let previousTarget = self.captureManager.selectedWindowStableIdentifier
                 await self.captureManager.requestPermission()
                 self.refreshWindowList()
-                let sourceChanged = previousWindowID
-                        != self.captureManager.selectedWindowID
-                    || previousTarget
-                        != self.captureManager.selectedWindowStableIdentifier
+                // Metal/iOS games can recreate the same visible window with a
+                // new transient CGWindowID. Treat the stable app/title identity
+                // as the source: rebinding that same target must not erase the
+                // trusted board, manual corrections, or engine result.
+                let sourceChanged = previousTarget
+                    != self.captureManager.selectedWindowStableIdentifier
                 if sourceChanged {
                     self.recognizer.resetCaptureSourceState()
                 }
@@ -127,29 +151,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 displayID: self.captureManager.selectedWindowDisplayID
             )
         }
-        vm.onClearBoard = { [weak self] in
-            guard let self else { return }
-            BoardGeometry.delete()
-            BoardGeometrySourceStore.clear()
-            self.recognizer.resetCaptureSourceState()
-            self.recognizer.boardGeometry = nil
-            self.vm.hasBoardGeometry = false
-            self.resetCaptureSession(message: "棋盘框选已清除")
+        vm.onPlayerSideChanged = { _ in
+            // Player side is presentation context only. Do not discard a
+            // trusted position merely because the user changes the label.
+            // Turn inference continues to come exclusively from board changes.
         }
-        vm.onPlayerSideChanged = { [weak self] playerSide in
-            guard let self else { return }
-            // The side picker must never rewrite turn inference or discard a
-            // trusted position.  It does, however, control which side gets a
-            // displayed move: while an opponent is thinking we keep tracking
-            // and pondering, but do not present their move as ours.
-            if self.currentSideToMove != playerSide {
-                self.showWaitingForOpponent(side: self.currentSideToMove)
-            } else if self.lastConfirmedBoard != nil {
-                // An answer may already have been computed while this side
-                // was hidden. Ask the existing capture loop to publish a
-                // fresh, user-side result without resetting the session.
-                self.forceEngineRefresh = true
-            }
+        vm.onTurnSideChanged = { [weak self] side in
+            self?.synchronizeTurn(to: side)
+        }
+        vm.onResyncPosition = { [weak self] in
+            self?.requestPositionResync()
+        }
+        vm.onCorrectBoardSquare = { [weak self] position, correction in
+            self?.correctBoardSquare(position, correction: correction)
+        }
+        vm.onFlipBoard = { [weak self] in
+            self?.flipPreviewOrientation()
         }
         vm.onAnalysisModeChanged = { [weak self] _ in
             guard let self else { return }
@@ -159,12 +176,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self.completedSearchPositionKey = nil
             self.ponderHint = nil
             self.forceEngineRefresh = true
-            self.vm.lastAnalyzedBoard = nil
             self.vm.bestMove = "--"
-            self.vm.bestMoveCN = "--"
+            self.vm.bestMoveCN = "正在切换棋力"
             self.vm.recommendedSide = nil
             self.resetDisplayedEvaluation()
-            self.vm.searchDetail = "棋力模式已切换，准备重新计算"
+            self.vm.searchDetail = "保留当前棋盘 · 正在用新棋力重新计算"
         }
         // Restore saved board geometry if any
         vm.hasBoardGeometry = false
@@ -178,6 +194,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                   sourceKey == self.captureManager.selectedCaptureSourceKey
             else {
                 self.vm.calibrationMessage = "❌ 目标窗口已变化，请重新框选"
+                self.showBoardSelectionAlert(
+                    title: "棋盘没有保存",
+                    message: "框选期间目标窗口发生了变化，请重新选择目标程序后再框一次。"
+                )
                 return
             }
 
@@ -188,11 +208,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 )
                 guard savedGeometry.windowNormalizedRect != nil else {
                     self.vm.calibrationMessage = "❌ 框选区域不在目标窗口内，请重新框选"
+                    self.showBoardSelectionAlert(
+                        title: "棋盘没有保存",
+                        message: "蓝框必须完整位于当前选择的象棋程序窗口内，请重新框选。"
+                    )
                     return
                 }
             }
-            savedGeometry.save()
-            BoardGeometrySourceStore.save(sourceKey: sourceKey)
+            BoardGeometrySourceStore.save(
+                geometry: savedGeometry,
+                sourceKey: sourceKey
+            )
             self.recognizer.resetCaptureSourceState()
             self.recognizer.boardGeometry = savedGeometry
             // Preserve an explicitly selected target window. The recognizer
@@ -206,6 +232,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self.vm.hasBoardGeometry = true
             self.resetCaptureSession(message: "新棋盘区域已保存，正在重新锁定局面")
             self.vm.calibrationMessage = "✅ 棋盘已定位，手动框选成功"
+            self.showBoardSelectionAlert(
+                title: "棋盘已保存",
+                message: "这个象棋程序的棋盘区域已经永久保存。现在可以点击播放开始识别。"
+            )
         }
         boardSelector.onCancel = { [weak self] in
             self?.pendingBoardSelectionSourceKey = nil
@@ -276,7 +306,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(NSMenuItem.separator())
         menu.addItem(withTitle: "一键校准",        action: #selector(startCalibration),  keyEquivalent: "k")
         menu.addItem(withTitle: "手动框选棋盘",     action: #selector(selectBoardManually), keyEquivalent: "b")
-        menu.addItem(withTitle: "清除框选",         action: #selector(clearBoardGeometry),  keyEquivalent: "")
         menu.addItem(withTitle: "重置校准",         action: #selector(resetCalibration),    keyEquivalent: "")
         menu.addItem(NSMenuItem.separator())
         menu.addItem(withTitle: "退出",          action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
@@ -356,19 +385,32 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func applySavedGeometryForCurrentSource() {
-        guard var geometry = BoardGeometry.load() else {
+        guard let currentSourceKey = captureManager.selectedCaptureSourceKey else {
             recognizer.boardGeometry = nil
             vm.hasBoardGeometry = false
             return
         }
 
-        let savedSourceKey = BoardGeometrySourceStore.sourceKey
-        let currentSourceKey = captureManager.selectedCaptureSourceKey
-        let isCompatible = savedSourceKey != nil
-            && savedSourceKey == currentSourceKey
+        var geometry = BoardGeometrySourceStore.geometry(for: currentSourceKey)
+        // Recover a rectangle written by an older build, then immediately put
+        // it into the per-source registry so a missing JSON file cannot lose
+        // it again.
+        if geometry == nil,
+           BoardGeometrySourceStore.sourceKey == currentSourceKey,
+           let legacyGeometry = BoardGeometry.load() {
+            geometry = legacyGeometry
+            BoardGeometrySourceStore.save(
+                geometry: legacyGeometry,
+                sourceKey: currentSourceKey
+            )
+        }
+        guard var geometry else {
+            recognizer.boardGeometry = nil
+            vm.hasBoardGeometry = false
+            return
+        }
 
-        if isCompatible,
-           captureManager.selectedWindowID != nil,
+        if captureManager.selectedWindowID != nil,
            geometry.windowNormalizedRect == nil,
            let windowFrame = captureManager.selectedWindowFrame {
             let upgraded = geometry.storingWindowRelativeRect(
@@ -380,12 +422,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 return
             }
             geometry = upgraded
-            geometry.save()
+            BoardGeometrySourceStore.save(
+                geometry: geometry,
+                sourceKey: currentSourceKey
+            )
         }
 
-        recognizer.boardGeometry = isCompatible ? geometry : nil
-        vm.hasBoardGeometry = isCompatible
-        if isCompatible, captureManager.isFullScreenCaptureSelected {
+        recognizer.boardGeometry = geometry
+        vm.hasBoardGeometry = true
+        if captureManager.isFullScreenCaptureSelected {
             captureManager.selectDisplay(geometry.displayID)
         }
     }
@@ -420,7 +465,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             geometry = migrated
             geometry.save()
         }
-        BoardGeometrySourceStore.save(sourceKey: currentSourceKey)
+        BoardGeometrySourceStore.save(
+            geometry: geometry,
+            sourceKey: currentSourceKey
+        )
     }
 
     // MARK: Calibration
@@ -440,13 +488,92 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func clearBoardGeometry() {
-        BoardGeometry.delete()
-        BoardGeometrySourceStore.clear()
+        if let sourceKey = captureManager.selectedCaptureSourceKey {
+            BoardGeometrySourceStore.removeGeometry(for: sourceKey)
+        }
         recognizer.resetCaptureSourceState()
         recognizer.boardGeometry = nil
         vm.hasBoardGeometry = false
         resetCaptureSession(message: "棋盘框选已清除")
         vm.calibrationMessage = "框选已清除，将恢复 Vision 自动检测"
+    }
+
+    private func showBoardSelectionAlert(title: String, message: String) {
+        let alert = NSAlert()
+        alert.alertStyle = title == "棋盘已保存" ? .informational : .warning
+        alert.messageText = title
+        alert.informativeText = message
+        alert.addButton(withTitle: "知道了")
+        NSApp.activate(ignoringOtherApps: true)
+        alert.runModal()
+    }
+
+    /// Align turn inference to a known real-world turn without touching the
+    /// capture source, recognized board, calibration, or board geometry. This
+    /// is needed when attaching to a game that was already underway: a static
+    /// screenshot cannot prove which colour made the last move.
+    private func synchronizeTurn(to side: PieceSide) {
+        currentSideToMove = side
+        vm.currentTurnSide = side
+        lastConfirmedBoard?.redToMove = (side == .red)
+        baselineObservations.removeAll(keepingCapacity: true)
+        baselineOrientationVotes.removeAll(keepingCapacity: true)
+        searchCoordinator.cancel()
+        searchRevision += 1
+        activeSearchPositionKey = nil
+        completedSearchPositionKey = nil
+        ponderHint = nil
+        forceEngineRefresh = true
+        vm.bestMove = "--"
+        vm.bestMoveCN = "正在计算\(side == .red ? "红方" : "黑方")走法"
+        vm.recommendedSide = nil
+        resetDisplayedEvaluation()
+        vm.status = vm.isRunning
+            ? (lastConfirmedBoard == nil ? .capturing : .stable)
+            : .idle
+        vm.searchDetail = "已同步为\(side == .red ? "红方" : "黑方")走 · 保持棋盘识别不变"
+    }
+
+    /// Rotates only the visual projection. Recognition and engine coordinates
+    /// remain canonical, and the user's choice stays locked for this run.
+    private func flipPreviewOrientation() {
+        let reversed = !vm.previewIsReversed
+        vm.previewIsReversed = reversed
+        lockedPreviewIsReversed = reversed
+        if let board = lastConfirmedBoard ?? vm.lastAnalyzedBoard, board.isValid {
+            persistTrustedBoard(board, isReversed: reversed)
+        }
+        vm.searchDetail = "已手动翻转棋盘 · 本轮分析保持此方向"
+    }
+
+    /// Deliberately forget only the tracked game state. Capture permissions,
+    /// selected window, board geometry, templates and ONNX models stay intact.
+    /// The last preview stays visible while the current screenshot replaces
+    /// the tracked state in the background.
+    private func requestPositionResync() {
+        searchCoordinator.cancel()
+        searchRevision += 1
+        activeSearchPositionKey = nil
+        completedSearchPositionKey = nil
+        ponderHint = nil
+
+        lastConfirmedBoard = nil
+        latestRawRecognizedBoard = nil
+        baselineObservations.removeAll(keepingCapacity: true)
+        baselineOrientationVotes.removeAll(keepingCapacity: true)
+        lockedPreviewIsReversed = nil
+        currentSideToMove = vm.currentTurnSide
+        historyFromStart = false
+        observedMoves.removeAll(keepingCapacity: true)
+        recentPositionKeys.removeAll(keepingCapacity: true)
+
+        vm.needsPositionResync = false
+        vm.status = vm.lastAnalyzedBoard == nil ? .capturing : .stable
+        vm.bestMove = "--"
+        vm.bestMoveCN = "正在重新同步当前局面"
+        vm.recommendedSide = nil
+        vm.errorMessage = nil
+        vm.searchDetail = "保留当前预览 · 后台重新同步截图"
     }
 
     // MARK: Analysis Loop
@@ -457,14 +584,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             vm.calibrationMessage = "请先完成校准再开始分析"
             return
         }
-        // A fresh Xiangqi game always starts with Red. `playerSide` means who
-        // operates this assistant, not whose turn the engine should assume.
+        // A fresh launch defaults to Red, while a manual turn synchronization
+        // made before resuming analysis must be honoured.
         lastConfirmedBoard = nil
-        currentSideToMove = .red
-        candidateBoard = nil
-        candidateCount = 0
-        candidatePlies = 0
-        consecutiveBadFrames = 0
+        latestRawRecognizedBoard = nil
+        currentSideToMove = vm.currentTurnSide
+        baselineObservations.removeAll(keepingCapacity: true)
+        baselineOrientationVotes.removeAll(keepingCapacity: true)
+        lockedPreviewIsReversed = nil
+        // Pause → Start always begins a brand-new visual scan. Session-local
+        // edits belong to the previous run and must not mask the current board.
+        manualSquareOverrides.removeAll(keepingCapacity: true)
+        vm.needsPositionResync = false
         forceEngineRefresh = false
         historyFromStart = false
         observedMoves = []
@@ -481,6 +612,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         completedSearchPositionKey = nil
         ponderHint = nil
         vm.isRunning = true
+        restorePersistedBoardIfAvailable(analyzeImmediately: false)
 
         analysisTask = Task { @MainActor [weak self] in
             guard let self else { return }
@@ -503,10 +635,28 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func analyzeOnce() async {
+        // Generic chess clients must use the user's fixed crop.  Silently
+        // falling back to pose/Vision after that crop disappeared was the
+        // source of the visible “识别中 / 识别不稳定” loop: window chrome,
+        // start overlays and move animations were intermittently treated as
+        // the board. XQWizard keeps its dedicated fixed-layout/score-sheet
+        // path and is therefore exempt.
+        let requiresManualGeometry =
+            captureManager.selectedWindowBundleIdentifier
+                != Self.wizardBundleIdentifier
+        if requiresManualGeometry && recognizer.boardGeometry == nil {
+            vm.status = .needsBoardSelection
+            vm.bestMoveCN = "请先框选棋盘"
+            vm.bestMove = "点击右下角蓝色框选按钮"
+            vm.errorMessage = nil
+            vm.needsPositionResync = false
+            vm.searchDetail = "每个象棋程序只需框选一次，之后会永久记住"
+            return
+        }
         // Keep the steady "就绪" indicator while the periodic refresh runs.
         // Setting .capturing on every 0.5 s tick made a successful analysis
         // visibly flicker between "识别中" and "就绪".
-        if vm.status != .stable {
+        if lastConfirmedBoard == nil {
             vm.status = .capturing
         }
 
@@ -526,7 +676,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             print("[Analysis] no capture: \(captureManager.lastCaptureError ?? "unknown")")
             vm.errorMessage = captureManager.lastCaptureError
                 ?? "未取得目标窗口截图，请检查屏幕录制权限"
-            recordBadFrame()
+            if lastConfirmedBoard == nil {
+                vm.status = .error
+            } else {
+                vm.searchDetail = "截图暂时中断 · 保留当前棋盘"
+            }
             return
         }
         // A game may recreate its native window while retaining the same app
@@ -548,27 +702,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let result = await recognizer.recognize(image: image)
 
         guard result != nil || wizardReplay != nil else {
-            vm.bestMoveCN = "定位失败"
-            vm.bestMove = "未找到棋盘区域"
             print("[Analysis] recognizer and XQWizard replay both returned nil")
-            vm.calibrationMessage = "诊断：已截到窗口，但棋盘与棋谱均未返回结果"
             saveCaptureDiagnostic(image)
-            recordBadFrame()
+            if lastConfirmedBoard == nil {
+                vm.status = .capturing
+                vm.bestMoveCN = "正在确认棋盘"
+                vm.bestMove = "已截图，等待稳定识别"
+            }
             return
         }
         if let result, result.status != .stable {
-            vm.diagnosticCapture = NSImage(cgImage: image, size: .zero)
             print("[Analysis] model status=\(String(describing: result.status)) valid=\(result.boardState.isValid)")
-            // After a position has been locked, a noisy frame is diagnostic
-            // evidence only. It must not overwrite the reliable move display.
-            if lastConfirmedBoard == nil {
-                vm.calibrationMessage = "正在锁定棋盘局面…"
-            }
             saveCaptureDiagnostic(image)
         }
 
         var board = wizardReplay?.board ?? result!.boardState
         let usedWizardReplay = wizardReplay != nil
+        if board.isValid {
+            latestRawRecognizedBoard = board
+        }
+        board = applyingManualOverrides(to: board)
         let previewIsReversed = !usedWizardReplay
             && (result?.isReversedForDisplay ?? false)
         // XQWizard exposes its visible score sheet through macOS
@@ -582,153 +735,68 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // accepting it; that requirement defeated the fallback precisely when
         // recognition failed or the empty opening score sheet was visible.
 
-        // Used only by the brain layer to reuse a predicted response when the
-        // opponent actually follows Pikafish's principal variation.
-        var acceptedTransition: (originFEN: String, move: UCIMove)?
+        // One simple recognition rule for startup and the whole game: keep the
+        // latest five frames and vote independently at every intersection.
+        // No turn inference, legal-move gate, one/two-ply branch, or repair
+        // candidate can block a stable visual board.
+        let sampleSize = 5
+        baselineObservations.append(board)
+        baselineOrientationVotes.append(previewIsReversed)
+        if baselineObservations.count > sampleSize {
+            baselineObservations.removeFirst(baselineObservations.count - sampleSize)
+        }
+        if baselineOrientationVotes.count > sampleSize {
+            baselineOrientationVotes.removeFirst(
+                baselineOrientationVotes.count - sampleSize
+            )
+        }
 
-        // ── Inter-frame validation & turn inference ──────────────────────────
-        if let prev = lastConfirmedBoard {
-            if prev.sameLayout(as: board) {
-                consecutiveBadFrames = 0
-                candidateBoard = nil
-                candidateCount = 0
-                candidatePlies = 0
-                board.redToMove = (currentSideToMove == .red)
-                if !forceEngineRefresh {
-                    // Engine work is deliberately independent from this 0.5 s
-                    // recognition loop. Keep its visible state while the same
-                    // trusted board is deepening in the background.
-                    if activeSearchPositionKey == nil {
-                        vm.status = .stable
-                    }
-                    return
-                }
-            } else {
-                // Every changed layout—raw, repaired, one ply or two plies—must
-                // appear in two matching captures. This prevents a selection
-                // highlight or animation frame from poisoning the trusted state.
-                let sideBeforeTransition = currentSideToMove
-                var proposedBoard: BoardState?
-                var proposedPlies = 0
-                let observedIsValid = board.isValid
-                let isOnePly = observedIsValid && (
-                    prev.isLegalTransition(to: board, movingSide: currentSideToMove) ||
-                    prev.isPlausibleSingleMove(to: board, movingSide: currentSideToMove)
-                )
-                let isTwoPly = observedIsValid && !isOnePly && prev.isLegalTwoPlyTransition(
-                    to: board, firstSide: currentSideToMove
-                )
-                if isOnePly {
-                    proposedBoard = board
-                    proposedPlies = 1
-                } else if isTwoPly {
-                    proposedBoard = board
-                    proposedPlies = 2
-                } else if let repaired = prev.bestMatchingTransition(
-                    to: board,
-                    firstSide: currentSideToMove,
-                    maxMismatches: 2
-                ) {
-                    proposedBoard = repaired.state
-                    proposedPlies = repaired.plies
-                } else {
-                    candidateBoard = nil
-                    candidateCount = 0
-                    candidatePlies = 0
-                    vm.status = .stable
-                    vm.errorMessage = nil
-                    return
-                }
-
-                guard let proposedBoard else { return }
-                if let previousCandidate = candidateBoard,
-                   previousCandidate.sameLayout(as: proposedBoard),
-                   candidatePlies == proposedPlies {
-                    candidateCount += 1
-                } else {
-                    candidateBoard = proposedBoard
-                    candidateCount = 1
-                    candidatePlies = proposedPlies
-                }
-                // A selected piece, animation or move marker can remain on
-                // screen for around one second. Require three identical
-                // observations before a displayed move becomes trusted.
-                guard candidateCount >= 3 else {
-                    vm.status = .stable
-                    vm.errorMessage = nil
-                    return
-                }
-                board = proposedBoard
-
-                if proposedPlies == 1 {
-                    currentSideToMove = currentSideToMove == .red ? .black : .red
-                }
-                if let sequence = prev.transitionMoves(to: board, firstSide: sideBeforeTransition),
-                   sequence.count == proposedPlies {
-                    if proposedPlies == 1, let onlyMove = sequence.first {
-                        var origin = prev
-                        origin.redToMove = (sideBeforeTransition == .red)
-                        acceptedTransition = (origin.toFEN(), onlyMove)
-                    }
-                    var side = sideBeforeTransition
-                    for move in sequence {
-                        observedMoves.append((side, move))
-                        side = side == .red ? .black : .red
-                    }
-                } else {
-                    historyFromStart = false
-                }
-                candidateBoard = nil
-                candidateCount = 0
-                candidatePlies = 0
-            }
+        if usedWizardReplay {
+            guard board.isValid else { return }
         } else {
-            // A raw frame with a highlighted/miscoloured piece can be marked
-            // invalid by the vision model.  When the visible XQWizard score
-            // sheet has independently replayed to the same board, that
-            // replay is stronger evidence than the raw model status and is
-            // safe to use for the initial trusted position.
-            guard (result?.status == .stable || usedWizardReplay), board.isValid else {
-                candidateBoard = nil
-                candidateCount = 0
-                candidatePlies = 0
-                recordBadFrame()
-                return
-            }
-            // The opening position has no earlier board that can prove it.
-            // Confirm it twice before the engine sees it.
-            if let previousCandidate = candidateBoard, previousCandidate.sameLayout(as: board) {
-                candidateCount += 1
+            if baselineObservations.count >= sampleSize,
+               let consensus = BoardState.temporalConsensus(
+                from: baselineObservations,
+                minimumAgreement: 0.60
+               ) {
+                board = consensus
+            } else if board.isValid {
+                // A complete current observation is usable even when one or
+                // two highlighted cells flicker between frames. Requiring all
+                // 90 intersections to reach a simultaneous 3/5 majority made
+                // an otherwise readable board wait forever at startup.
+                // Multi-frame voting remains a quality improvement when it
+                // succeeds, but it is never a gate that blocks recognition.
             } else {
-                candidateBoard = board
-                candidateCount = 1
-                candidatePlies = 0
-            }
-            // The first position has no preceding move to validate it
-            // against, so use the same stricter three-frame confirmation.
-            guard candidateCount >= 3 else {
-                vm.status = .capturing
+                if lastConfirmedBoard == nil {
+                    vm.status = .capturing
+                    vm.bestMoveCN = "正在确认棋盘"
+                    vm.bestMove = "等待一帧完整棋盘"
+                }
                 return
             }
-            historyFromStart = board.sameLayout(as: BoardState.initialPosition())
-            observedMoves = []
-            recentPositionKeys = []
-        }
-        consecutiveBadFrames = 0
-
-        // Defense in depth: only a materially valid position may become the
-        // next trusted state or reach the engine/UI.
-        guard board.isValid else {
-            recordBadFrame()
-            return
         }
 
-        // Engine positions always use canonical coordinates. Only the preview
-        // mirrors a client that has rendered Black at the bottom of the screen.
-        vm.previewIsReversed = previewIsReversed
+        let previousBoard = lastConfirmedBoard
+        let layoutChanged = previousBoard == nil
+            || previousBoard?.sameLayout(as: board) == false
+        if layoutChanged, previousBoard != nil {
+            historyFromStart = false
+            observedMoves.removeAll(keepingCapacity: true)
+            ponderHint = nil
+        }
+        // Lock orientation on the first accepted board of this scan. The old
+        // rolling 3-of-5 vote allowed a few noisy frames to rotate the entire
+        // preview halfway through a game.
+        if lockedPreviewIsReversed == nil {
+            lockedPreviewIsReversed = previewIsReversed
+        }
+        vm.previewIsReversed = lockedPreviewIsReversed ?? previewIsReversed
+        vm.needsPositionResync = false
+        vm.errorMessage = nil
+        vm.diagnosticCapture = nil
 
         if let replay = wizardReplay, replay.board.sameLayout(as: board) {
-            currentSideToMove = replay.sideToMove
             historyFromStart = true
             observedMoves = replay.moves
             recentPositionKeys = replay.positionKeys
@@ -736,6 +804,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         board.redToMove = (currentSideToMove == .red)
         lastConfirmedBoard = board
+        if latestRawRecognizedBoard == nil {
+            latestRawRecognizedBoard = board
+        }
+        // Recognition UI is updated now, before and independently from the
+        // engine. A slow/cancelled search can never masquerade as “未识别”.
+        vm.lastAnalyzedBoard = board
+        persistTrustedBoard(board, isReversed: vm.previewIsReversed)
+        if activeSearchPositionKey == nil {
+            vm.status = .stable
+        }
         appendPositionKey(board.toFEN())
 
         let fen = board.toFEN()
@@ -814,34 +892,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             repetitionAllowedMoves: allowedMoves
         )
 
-        // Ponder without a second engine process: while the opponent was
-        // thinking, the previous PV already contained our predicted response.
-        // If the observed move matches, show that legal reply instantly, then
-        // let the fresh 2→6→15 second search confirm or improve it.
-        if let transition = acceptedTransition,
-           let hint = ponderHint,
-           hint.originFEN == transition.originFEN,
-           hint.predictedMove == transition.move.uci,
-           hint.targetSide == sideAtRequest,
-           hint.mode == modeAtRequest,
-           let response = UCIMove(uci: hint.response.uci),
-           board.isLegalMove(response, for: sideAtRequest) {
-            applyBrainUpdate(
-                BrainSearchUpdate(
-                    revision: revision,
-                    positionKey: positionKey,
-                    phase: .quick,
-                    source: .ponderCache,
-                    move: hint.response
-                ),
-                board: board,
-                side: sideAtRequest,
-                fen: fen,
-                mode: modeAtRequest
-            )
-        }
-        if acceptedTransition != nil { ponderHint = nil }
-
         searchCoordinator.replaceSearch(
             with: request,
             onUpdate: { [weak self] update in
@@ -879,9 +929,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 }
                 self.activeSearchPositionKey = nil
                 self.forceEngineRefresh = true
-                self.vm.status = .capturing
+                // An engine retry is not a recognition failure. Keep the
+                // trusted board and green recognition state visible.
+                self.vm.status = .stable
                 self.vm.errorMessage = "引擎已自动恢复：\(error.localizedDescription)"
-                self.vm.searchDetail = "准备重新分析"
+                self.vm.searchDetail = "棋盘保持不变 · 准备重新分析"
             }
         )
     }
@@ -903,22 +955,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
               movingPiece.side == side,
               board.isLegalMove(uciMove, for: side)
         else { return }
-
-        // Continue analysing the opponent's turn for the ponder cache, but
-        // never draw their best move as an instruction for the player.  The
-        // previous version only stored `playerSide` as a label, which made a
-        // Black player see a green Red arrow until Red had physically moved.
-        guard side == vm.playerSide else {
-            showWaitingForOpponent(side: side, board: board)
-            buildPonderHintIfPossible(
-                update: update,
-                board: board,
-                side: side,
-                fen: fen,
-                mode: mode
-            )
-            return
-        }
 
         vm.bestMove = update.move.uci
         vm.bestMoveCN = ChineseNotation.convert(uci: update.move.uci, state: board)
@@ -961,35 +997,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // position, its PV predicts both the opponent move and our response.
         // The cached response is displayed only after a matching observed move
         // and a fresh legality check on the resulting board.
-        buildPonderHintIfPossible(
-            update: update,
-            board: board,
-            side: side,
-            fen: fen,
-            mode: mode
-        )
-    }
-
-    private func showWaitingForOpponent(side: PieceSide, board: BoardState? = nil) {
-        let opponentLabel = side == .red ? "红方" : "黑方"
-        vm.bestMove = "--"
-        vm.bestMoveCN = "等待\(opponentLabel)走棋"
-        vm.recommendedSide = nil
-        vm.depth = 0
-        vm.pv = []
-        if let board { vm.lastAnalyzedBoard = board }
-        vm.status = .stable
-        vm.searchDetail = "我方\(vm.playerSide == .red ? "红方" : "黑方") · 等待\(opponentLabel)走棋"
-        vm.errorMessage = nil
-    }
-
-    private func buildPonderHintIfPossible(
-        update: BrainSearchUpdate,
-        board: BoardState,
-        side: PieceSide,
-        fen: String,
-        mode: AnalysisMode
-    ) {
+        // A single Pikafish process doubles as ponder: on the opponent's
+        // position, its PV predicts both the opponent move and our response.
+        // The cached response is displayed only after a matching observed move
+        // and a fresh legality check on the resulting board.
         if (update.phase == .quick || update.phase == .final),
            side != vm.playerSide,
            update.move.pv.count >= 2,
@@ -1070,6 +1081,266 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         vm.errorMessage = nil
     }
 
+    /// Keeps the most recent trusted board for each selected chess program.
+    /// A relaunch or transient native-window recreation can therefore show a
+    /// useful position immediately while screenshots refresh in the background.
+    private func persistTrustedBoard(_ board: BoardState, isReversed: Bool) {
+        guard board.isValid,
+              let sourceKey = captureManager.selectedCaptureSourceKey,
+              let data = try? JSONEncoder().encode(
+                SavedBoardSnapshot(board: board, isReversed: isReversed)
+              )
+        else { return }
+        var snapshots = UserDefaults.standard.dictionary(
+            forKey: Self.savedBoardSnapshotsKey
+        ) as? [String: String] ?? [:]
+        snapshots[sourceKey] = data.base64EncodedString()
+        UserDefaults.standard.set(snapshots, forKey: Self.savedBoardSnapshotsKey)
+    }
+
+    private func persistedBoardForCurrentSource() -> SavedBoardSnapshot? {
+        guard let sourceKey = captureManager.selectedCaptureSourceKey,
+              let snapshots = UserDefaults.standard.dictionary(
+                forKey: Self.savedBoardSnapshotsKey
+              ) as? [String: String],
+              let encoded = snapshots[sourceKey],
+              let data = Data(base64Encoded: encoded),
+              let snapshot = try? JSONDecoder().decode(
+                SavedBoardSnapshot.self, from: data
+              ),
+              snapshot.board.isValid
+        else { return nil }
+        return snapshot
+    }
+
+    private func restorePersistedBoardIfAvailable(
+        analyzeImmediately: Bool = true
+    ) {
+        guard let snapshot = persistedBoardForCurrentSource() else { return }
+        var board = snapshot.board
+        board.redToMove = currentSideToMove == .red
+        if analyzeImmediately {
+            lastConfirmedBoard = board
+            latestRawRecognizedBoard = board
+            vm.lastAnalyzedBoard = board
+            vm.previewIsReversed = snapshot.isReversed
+            lockedPreviewIsReversed = snapshot.isReversed
+            vm.status = .stable
+            forceEngineRefresh = true
+            vm.bestMoveCN = "已恢复上次局面"
+            vm.bestMove = "立即重新计算"
+            vm.searchDetail = "截图将在后台继续更新"
+            analyzeTrustedBoardImmediately(board)
+        } else {
+            // Pause → Start is a hard visual rescan boundary.  A saved board
+            // may remain on screen as a harmless placeholder, but it must not
+            // become recognition evidence, a confirmed baseline, or an engine
+            // input for the new run.  Only fresh captures may repopulate
+            // lastConfirmedBoard/latestRawRecognizedBoard below analyzeOnce().
+            lastConfirmedBoard = nil
+            latestRawRecognizedBoard = nil
+            vm.lastAnalyzedBoard = board
+            vm.previewIsReversed = snapshot.isReversed
+            lockedPreviewIsReversed = nil
+            vm.status = .capturing
+            forceEngineRefresh = false
+            vm.bestMoveCN = "正在扫描当前画面"
+            vm.bestMove = "保留上次预览，等待当前截图"
+            vm.recommendedSide = nil
+            vm.searchDetail = "暂停后重新开始：强制分析整个当前棋盘"
+        }
+    }
+
+    private func applyingManualOverrides(to board: BoardState) -> BoardState {
+        var corrected = board
+        for (position, override) in manualSquareOverrides {
+            switch override {
+            case .empty:
+                corrected[position] = nil
+            case .piece(let piece):
+                corrected[position] = piece
+            }
+        }
+        return corrected
+    }
+
+    private func correctBoardSquare(
+        _ position: BoardPosition,
+        correction: BoardSquareCorrection
+    ) {
+        switch correction {
+        case .followRecognition:
+            manualSquareOverrides.removeValue(forKey: position)
+        case .empty:
+            manualSquareOverrides[position] = .empty
+        case .piece(let piece):
+            manualSquareOverrides[position] = .piece(piece)
+        }
+
+        guard let trusted = latestRawRecognizedBoard
+                ?? lastConfirmedBoard
+                ?? vm.lastAnalyzedBoard
+        else {
+            vm.searchDetail = "请先识别出棋盘，再使用摆棋或擦棋工具"
+            return
+        }
+        let corrected = applyingManualOverrides(to: trusted)
+        // Always show the user's edit immediately. Moving a king or repairing
+        // several related squares necessarily creates a temporarily incomplete
+        // position between clicks; that must not make the editor unusable.
+        vm.lastAnalyzedBoard = corrected
+        vm.diagnosticCapture = nil
+        guard corrected.isValid else {
+            searchCoordinator.cancel()
+            searchRevision += 1
+            activeSearchPositionKey = nil
+            completedSearchPositionKey = nil
+            vm.errorMessage = nil
+            vm.status = .stable
+            vm.bestMove = "--"
+            vm.bestMoveCN = "人工编辑中"
+            vm.recommendedSide = nil
+            vm.searchDetail = "继续摆棋或擦棋；局面完整后会自动重新计算"
+            return
+        }
+
+        searchCoordinator.cancel()
+        searchRevision += 1
+        activeSearchPositionKey = nil
+        completedSearchPositionKey = nil
+        ponderHint = nil
+        lastConfirmedBoard = corrected
+        baselineObservations.removeAll(keepingCapacity: true)
+        baselineOrientationVotes.removeAll(keepingCapacity: true)
+        historyFromStart = false
+        forceEngineRefresh = true
+        vm.lastAnalyzedBoard = corrected
+        persistTrustedBoard(corrected, isReversed: vm.previewIsReversed)
+        vm.diagnosticCapture = nil
+        vm.errorMessage = nil
+        vm.status = .stable
+        vm.searchDetail = correctionDescription(correction)
+        analyzeTrustedBoardImmediately(corrected)
+    }
+
+    /// Starts the chess brain from an already trusted in-memory position.
+    /// Manual corrections and restored snapshots must not wait for another
+    /// screenshot before they can produce a move recommendation.
+    private func analyzeTrustedBoardImmediately(_ board: BoardState) {
+        guard board.isValid else { return }
+        var board = board
+        board.redToMove = currentSideToMove == .red
+        lastConfirmedBoard = board
+        vm.lastAnalyzedBoard = board
+
+        let fen = board.toFEN()
+        let sideAtRequest = currentSideToMove
+        let modeAtRequest = vm.analysisMode
+        let moveHistory = historyFromStart ? observedMoves.map { $0.move.uci } : nil
+        let positionKey = brainPositionKey(
+            fen: fen,
+            history: moveHistory,
+            mode: modeAtRequest
+        )
+        let legalMoves = board.legalMoves(for: sideAtRequest)
+
+        guard !legalMoves.isEmpty else {
+            searchCoordinator.cancel()
+            searchRevision += 1
+            activeSearchPositionKey = nil
+            completedSearchPositionKey = positionKey
+            forceEngineRefresh = false
+            ponderHint = nil
+            vm.status = .stable
+            vm.bestMove = "--"
+            vm.bestMoveCN = "对局结束"
+            vm.recommendedSide = nil
+            vm.score = sideAtRequest == .red ? -100_000 : 100_000
+            vm.mateIn = 0
+            vm.depth = 0
+            vm.pv = []
+            vm.errorMessage = nil
+            vm.searchDetail = "\(sideAtRequest == .red ? "红方" : "黑方")无合法走法"
+            return
+        }
+
+        if !forceEngineRefresh,
+           activeSearchPositionKey == positionKey || completedSearchPositionKey == positionKey {
+            if activeSearchPositionKey == nil { vm.status = .stable }
+            return
+        }
+
+        searchCoordinator.cancel()
+        searchRevision += 1
+        let revision = searchRevision
+        activeSearchPositionKey = positionKey
+        completedSearchPositionKey = nil
+        forceEngineRefresh = false
+        vm.status = .analyzing
+        vm.bestMove = "--"
+        vm.bestMoveCN = "正在计算"
+        vm.recommendedSide = nil
+        vm.searchDetail = "人工局面已接管 · 快速计算中"
+
+        let forbiddenMoves = Set(legalMoves.filter {
+            shouldAvoidForRepetition($0, in: board, side: sideAtRequest)
+        }.map(\.uci))
+        let allowedMoves = legalMoves
+            .filter { !forbiddenMoves.contains($0.uci) }
+            .map(\.uci)
+        let request = BrainSearchRequest(
+            revision: revision,
+            positionKey: positionKey,
+            fen: fen,
+            movesFromStart: moveHistory,
+            board: board,
+            sideToMove: sideAtRequest,
+            mode: brainMode(modeAtRequest),
+            openingWeights: openingWeights(
+                for: board,
+                side: sideAtRequest,
+                history: moveHistory
+            ),
+            repetitionForbiddenMoves: forbiddenMoves,
+            repetitionAllowedMoves: allowedMoves
+        )
+
+        searchCoordinator.replaceSearch(
+            with: request,
+            onUpdate: { [weak self] update in
+                self?.applyBrainUpdate(
+                    update,
+                    board: board,
+                    side: sideAtRequest,
+                    fen: fen,
+                    mode: modeAtRequest
+                )
+            },
+            onFailure: { [weak self] failedRevision, error in
+                guard let self,
+                      self.searchRevision == failedRevision,
+                      self.activeSearchPositionKey == positionKey
+                else { return }
+                self.activeSearchPositionKey = nil
+                self.forceEngineRefresh = true
+                self.vm.status = .stable
+                self.vm.errorMessage = "引擎已自动恢复：\(error.localizedDescription)"
+                self.vm.searchDetail = "人工局面保持不变 · 准备重新分析"
+            }
+        )
+    }
+
+    private func correctionDescription(_ correction: BoardSquareCorrection) -> String {
+        switch correction {
+        case .followRecognition:
+            return "已恢复该位置的自动识别"
+        case .empty:
+            return "已手动清空该位置 · 后续以人工修正为准"
+        case .piece(let piece):
+            return "已手动放置\(piece.kind.displayName(side: piece.side)) · 后续以人工修正为准"
+        }
+    }
+
     /// Clears only the state learned from the current capture source. Models,
     /// templates, engine configuration, and any compatible saved board geometry
     /// remain intact when the user switches to another application window.
@@ -1081,11 +1352,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         ponderHint = nil
 
         lastConfirmedBoard = nil
-        currentSideToMove = .red
-        candidateBoard = nil
-        candidateCount = 0
-        candidatePlies = 0
-        consecutiveBadFrames = 0
+        latestRawRecognizedBoard = nil
+        // A manual turn choice belongs to the user and must survive window
+        // refreshes, re-framing and capture-source changes.
+        currentSideToMove = vm.currentTurnSide
+        baselineObservations.removeAll(keepingCapacity: true)
+        baselineOrientationVotes.removeAll(keepingCapacity: true)
+        lockedPreviewIsReversed = nil
+        manualSquareOverrides.removeAll(keepingCapacity: true)
         forceEngineRefresh = false
         historyFromStart = false
         observedMoves.removeAll(keepingCapacity: true)
@@ -1098,8 +1372,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         vm.bestMoveCN = "--"
         vm.recommendedSide = nil
         vm.diagnosticCapture = nil
+        vm.needsPositionResync = false
         resetDisplayedEvaluation()
         vm.status = vm.isRunning ? .capturing : .idle
+        if vm.isRunning {
+            restorePersistedBoardIfAvailable()
+        }
         if let message { vm.searchDetail = message }
     }
 
@@ -1295,20 +1573,4 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return move.from == previous.to && move.to == previous.from
     }
 
-    /// Keep a good board visible through occasional bad screenshots. Only a
-    /// sustained failure is shown as an actual recognition problem.
-    private func recordBadFrame() {
-        consecutiveBadFrames += 1
-        print("[Analysis] bad frame #\(consecutiveBadFrames), confirmed=\(lastConfirmedBoard != nil)")
-        if lastConfirmedBoard != nil {
-            // Preserve the last trusted board indefinitely.  Recognition can
-            // resume as soon as a legal successor appears; an arbitrary count
-            // of bad frames must never invalidate known-good state.
-            vm.status = .stable
-        } else if consecutiveBadFrames < 5 {
-            vm.status = .capturing
-        } else {
-            vm.status = .unstable
-        }
-    }
 }

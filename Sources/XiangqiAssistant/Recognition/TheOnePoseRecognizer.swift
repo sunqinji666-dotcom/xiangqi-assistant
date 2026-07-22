@@ -113,7 +113,11 @@ final class TheOnePoseRecognizer {
             // content-relative bias keeps both edge files equally centred.
             let horizontalBias = min(0.008, max(0, 1 - normalized.maxX))
             normalized.origin.x += horizontalBias
-            let aspect = normalized.width / max(normalized.height, 0.001)
+            // Compare the real pixel dimensions. Comparing normalized width
+            // and height made the answer depend on the containing window's
+            // aspect ratio, so a perfectly normal board inside a wide game
+            // window was incorrectly rejected as “too narrow”.
+            let aspect = rect.width / max(rect.height, 0.001)
             guard aspect > 0.65, aspect < 1.15 else { return nil }
             return normalized
         } catch {

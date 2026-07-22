@@ -64,7 +64,6 @@ final class TheOneLayoutRecognizer {
 
             var state = BoardState()
             var totalConfidence = 0.0
-            var rankedLabels: [[(offset: Int, score: Float)]] = []
             for index in 0..<90 {
                 let start = index * 16
                 let slice = values[start..<(start + 16)]
@@ -74,7 +73,6 @@ final class TheOneLayoutRecognizer {
                 guard let best = ranked.first else {
                     return nil
                 }
-                rankedLabels.append(ranked)
                 totalConfidence += Double(best.score)
                 apply(label: labels[best.offset], to: &state,
                       col: index % 9, row: index / 9)

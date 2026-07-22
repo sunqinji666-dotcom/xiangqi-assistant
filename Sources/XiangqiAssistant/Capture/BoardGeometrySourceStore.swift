@@ -8,6 +8,14 @@ enum BoardGeometrySourceStore {
     private static let sourceKeyKey = "BoardGeometryCaptureSourceKey"
     private static let bundleIdentifierKey =
         "BoardGeometrySourceBundleIdentifier"
+    /// Durable, per-application copies of manual rectangles.  The original
+    /// implementation kept a single JSON file plus one source key, so framing
+    /// a second client replaced the first client's rectangle and an accidental
+    /// legacy-file removal left every client without a crop.  UserDefaults is
+    /// a second persistence channel and lets each chess application retain its
+    /// own rectangle.
+    private static let geometryRegistryKey =
+        "BoardGeometryByCaptureSource.v2"
 
     static var sourceKey: String? {
         WindowCandidatePolicy.normalizedText(
@@ -46,6 +54,44 @@ enum BoardGeometrySourceStore {
     static func save(sourceKey: String) {
         UserDefaults.standard.set(sourceKey, forKey: sourceKeyKey)
         UserDefaults.standard.removeObject(forKey: bundleIdentifierKey)
+    }
+
+    static func geometry(for sourceKey: String) -> BoardGeometry? {
+        geometryRegistry()[sourceKey]
+    }
+
+    static func save(geometry: BoardGeometry, sourceKey: String) {
+        var registry = geometryRegistry()
+        registry[sourceKey] = geometry
+        if let data = try? JSONEncoder().encode(registry) {
+            UserDefaults.standard.set(data, forKey: geometryRegistryKey)
+        }
+        save(sourceKey: sourceKey)
+        // Keep the historical file as an independent recovery copy and for
+        // compatibility with earlier builds.
+        geometry.save()
+    }
+
+    static func removeGeometry(for sourceKey: String) {
+        var registry = geometryRegistry()
+        registry.removeValue(forKey: sourceKey)
+        if let data = try? JSONEncoder().encode(registry) {
+            UserDefaults.standard.set(data, forKey: geometryRegistryKey)
+        }
+        if self.sourceKey == sourceKey {
+            clear()
+            BoardGeometry.delete()
+        }
+    }
+
+    private static func geometryRegistry() -> [String: BoardGeometry] {
+        guard let data = UserDefaults.standard.data(forKey: geometryRegistryKey),
+              let registry = try? JSONDecoder().decode(
+                [String: BoardGeometry].self,
+                from: data
+              )
+        else { return [:] }
+        return registry
     }
 
     static func clear() {

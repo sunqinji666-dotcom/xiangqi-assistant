@@ -1,6 +1,6 @@
 # 象棋助手 · XiangqiAssistant
 
-![象棋助手 v1.1 主视觉：本地识别棋盘并由引擎深化候选着法的概念示意](docs/assets/xiangqi-assistant-hero-v2.png)
+![象棋助手主视觉：本地识别棋盘并由引擎深化候选着法的概念示意](docs/assets/xiangqi-assistant-hero-v2.png)
 
 <div align="center">
 
@@ -10,13 +10,13 @@
 
 **简体中文** · [English](docs/README.en.md) · [日本語](docs/README.ja.md)
 
-[下载 v1.1.0](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest) · [一分钟上手](#一分钟上手) · [查看工作原理](#从一帧画面到一手建议) · [Star / 收藏](https://github.com/sunqinji666-dotcom/xiangqi-assistant)
+[下载 v1.2.0](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest) · [一分钟上手](#一分钟上手) · [查看工作原理](#从一帧画面到一手建议) · [Star / 收藏](https://github.com/sunqinji666-dotcom/xiangqi-assistant)
 
 </div>
 
 | 当前稳定版 | 支持平台 | 运行方式 | 许可证 | 最后验证 |
 |---|---|---|---|---|
-| v1.1.0 · Build 2 | macOS 14+ · Apple Silicon | 菜单栏 · 本地运行 | MIT；第三方组件除外 | 2026-07-23 |
+| v1.2.0 · Build 3 | macOS 14+ · Apple Silicon | 菜单栏 · 本地运行 | MIT；第三方组件除外 | 2026-07-23 |
 
 ## 一盘棋真正需要的，不是更多噪音
 
@@ -25,6 +25,19 @@
 象棋助手把这段过程压缩成一个清楚的闭环：你明确选择一个棋盘窗口，它读取画面、确认棋盘、还原局面，再把可信的 FEN 交给本机 Pikafish。约 2 秒时先展示一份可用建议；局面没有变化时，后台继续搜索到约 6 秒；遇到着法反复、分数波动或杀棋线时，最多深化到约 15 秒。
 
 它不是替你下棋的人。它更像坐在棋盘旁边的一位安静研究员：先给方向，再把证据补完整。
+
+## v1.2.0：让识别真正跟得上一整盘棋
+
+v1.2.0 的重点不是再增加一个模型，而是让“框选、识别、纠正、继续分析”成为可靠的长期状态。
+
+- **每个程序各自记住棋盘**：不同象棋客户端拥有独立的窗口相对框选区域，不再互相覆盖。
+- **多屏幕确认式框选**：所有显示器都能接收框选，拖完后必须点击“确认保存”，避免误触立即写入。
+- **五帧逐格投票**：90 个交叉点分别投票，单个高亮、动画或闪烁棋子不会拖住整盘识别。
+- **方向锁定与手动翻转**：一次确认后，本局不会因为瞬时噪声突然旋转；仍可由用户主动翻转。
+- **人可以纠正机器**：支持按格修正棋子或恢复自动识别，也能手动同步红黑行棋方。
+- **重新同步而不重置一切**：可只清除棋局跟踪状态，保留窗口、权限、框选、模型和当前预览。
+- **按来源恢复可信棋盘**：重新打开或窗口重建时先恢复上次局面，截图在后台继续更新；暂停后再开始仍会强制执行全新扫描。
+- **识别与引擎解耦**：Pikafish 变慢或恢复时，已经确认的棋盘仍保持稳定状态。
 
 ## v1.1.0：更快回答，也更谨慎地下结论
 
@@ -48,7 +61,7 @@
 
 ## 一分钟上手
 
-1. 在 [Releases](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest) 下载 `XiangqiAssistant-v1.1.0-macOS-arm64.zip`。
+1. 在 [Releases](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest) 下载 `XiangqiAssistant-v1.2.0-macOS-arm64.zip`。
 2. 解压，把 `象棋助手-TheOne.app` 拖入“应用程序”。
 3. 首次打开若 macOS 阻止运行，请在 Finder 中右键应用，选择“打开”。
 4. 前往“系统设置 → 隐私与安全性 → 屏幕录制”，允许象棋助手读取你选择的窗口。
@@ -104,6 +117,7 @@
 | 局面识别 | TheOne1006 10×9、16 类布局模型 |
 | 推理运行时 | Microsoft ONNX Runtime 1.24.2 |
 | 局面表达 | 合法性检查、方向规范化、FEN、历史修订号 |
+| 识别连续性 | 五帧逐格投票、方向锁定、手动修正与按来源恢复 |
 | 棋力分析 | Pikafish 独立进程，通过 UCI 异步通信 |
 | 搜索可靠性 | 墙钟超时、EOF/进程退出恢复、取消后 drain、终局处理 |
 | 本地知识 | 带来源记录、合法性检查与引擎复核的离线开局库 |
@@ -113,8 +127,10 @@
 ### 当前明确支持
 
 - 选择窗口、刷新窗口列表和持续观察目标窗口；
-- 自动定位棋盘、手动框选和多显示器下的窗口相对校准；
-- 正向与反向观察视角的规范化；
+- 自动定位棋盘、确认式手动框选和多显示器下的窗口相对校准；
+- 为不同象棋程序分别保存棋盘区域与最近可信局面；
+- 正向与反向观察视角规范化、方向锁定和手动翻转；
+- 按格修正棋子、恢复自动识别、同步行棋方和重新同步局面；
 - 局面稳定性保护、FEN 生成和历史连续性；
 - 普通、主动、超强三种本地分析节奏；
 - 中文着法、红方视角分数、深度、杀棋距离和主要变化展示；
@@ -153,7 +169,7 @@ xcodebuild \
 
 ### 逻辑验收覆盖
 
-仓库中的 `Tests/BrainLogicHarness.swift` 覆盖窗口候选过滤、反向棋盘规范化、红黑分数与杀棋方向、推荐稳定性、开局库合法性、引擎终局、墙钟超时、搜索取消与替换等关键路径。它是独立逻辑验收程序，不是完整 UI 自动化测试套件。
+仓库中的 `Tests/BrainLogicHarness.swift` 覆盖窗口候选过滤、反向棋盘规范化、五帧逐格共识、红黑分数与杀棋方向、推荐稳定性、开局库合法性、引擎终局、墙钟超时、搜索取消与替换等关键路径。它是独立逻辑验收程序，不是完整 UI 自动化测试套件。
 
 ## 项目结构
 
@@ -172,7 +188,7 @@ Sources/XiangqiAssistant/
 正式安装包和校验文件位于 [GitHub Releases](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest)。
 
 ```bash
-shasum -a 256 -c XiangqiAssistant-v1.1.0-macOS-arm64.zip.sha256
+shasum -a 256 -c XiangqiAssistant-v1.2.0-macOS-arm64.zip.sha256
 ```
 
 校验成功会显示 `OK`。如果文件名、大小或摘要与 Release 页面不一致，请不要运行该安装包。

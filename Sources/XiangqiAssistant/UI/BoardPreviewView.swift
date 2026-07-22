@@ -5,7 +5,9 @@ import SwiftUI
 /// having to decode Chinese notation or UCI coordinates.
 struct BoardPreviewView: View {
     @ObservedObject var vm: AssistantViewModel
+    @State private var activeCorrection: BoardSquareCorrection?
 
+    private let cardWidth: CGFloat = 300
     private let boardWidth: CGFloat = 270
     private let boardHeight: CGFloat = 300
 
@@ -27,6 +29,15 @@ struct BoardPreviewView: View {
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(side == .red ? .red : .primary)
                 }
+                Button {
+                    vm.onFlipBoard?()
+                } label: {
+                    Label("翻转", systemImage: "arrow.triangle.2.circlepath")
+                        .font(.caption2.weight(.semibold))
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.orange)
+                .help("旋转局面预览和走法箭头，并在本轮分析中锁定方向")
             }
 
             ZStack {
@@ -47,12 +58,10 @@ struct BoardPreviewView: View {
             .overlay(RoundedRectangle(cornerRadius: 10)
                 .stroke(Color.white.opacity(0.18), lineWidth: 1))
 
-            Text("绿色箭头＝推荐走法")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+            boardEditorPalette
         }
         .padding(12)
-        .frame(width: boardWidth + 24)
+        .frame(width: cardWidth, height: 456)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16)
             .stroke(Color.white.opacity(0.15), lineWidth: 1))
@@ -77,8 +86,17 @@ struct BoardPreviewView: View {
 
                 Path { path in
                     for col in 0...8 {
-                        path.move(to: CGPoint(x: CGFloat(col) * dx, y: 0))
-                        path.addLine(to: CGPoint(x: CGFloat(col) * dx, y: h))
+                        let x = CGFloat(col) * dx
+                        if col == 0 || col == 8 {
+                            path.move(to: CGPoint(x: x, y: 0))
+                            path.addLine(to: CGPoint(x: x, y: h))
+                        } else {
+                            // The inner files stop at both banks of the river.
+                            path.move(to: CGPoint(x: x, y: 0))
+                            path.addLine(to: CGPoint(x: x, y: 4 * dy))
+                            path.move(to: CGPoint(x: x, y: 5 * dy))
+                            path.addLine(to: CGPoint(x: x, y: h))
+                        }
                     }
                     for row in 0...9 {
                         path.move(to: CGPoint(x: 0, y: CGFloat(row) * dy))
@@ -86,6 +104,17 @@ struct BoardPreviewView: View {
                     }
                 }
                 .stroke(Color.black.opacity(0.55), lineWidth: 1)
+
+                HStack {
+                    Text("楚 河")
+                    Spacer()
+                    Text("汉 界")
+                }
+                .font(.system(size: 13, weight: .semibold, design: .serif))
+                .foregroundStyle(Color.black.opacity(0.58))
+                .padding(.horizontal, dx * 0.75)
+                .frame(width: w)
+                .position(x: w / 2, y: dy * 4.5)
 
                 if let move {
                     moveArrow(from: point(for: move.from, dx: dx, dy: dy,
@@ -146,6 +175,160 @@ struct BoardPreviewView: View {
                         .foregroundStyle(.black.opacity(0.55))
                         .position(x: w / 2, y: h / 2)
                 }
+
+                // Keep the interaction layer above the rendered pieces so
+                // right-click works on occupied and empty intersections alike.
+                if state != nil {
+                    ForEach(0..<90, id: \.self) { index in
+                        let position = BoardPosition(
+                            col: index % 9,
+                            row: index / 9
+                        )
+                        Color.clear
+                            .frame(width: max(18, dx * 0.8),
+                                   height: max(18, dy * 0.8))
+                            .contentShape(Rectangle())
+                            .position(point(for: position, dx: dx, dy: dy,
+                                            reversed: reversed))
+                            .onTapGesture {
+                                guard let activeCorrection else { return }
+                                vm.onCorrectBoardSquare?(position, activeCorrection)
+                            }
+                            .contextMenu {
+                                correctionMenu(for: position)
+                            }
+                    }
+                }
+            }
+        }
+    }
+
+    private var boardEditorPalette: some View {
+        VStack(spacing: 4) {
+            editorPieceRow(side: .red)
+            editorPieceRow(side: .black)
+            HStack(spacing: 14) {
+                editorToolButton(
+                    title: "擦棋",
+                    systemImage: "eraser",
+                    correction: .empty
+                )
+                editorToolButton(
+                    title: "自动",
+                    systemImage: "arrow.uturn.backward.circle",
+                    correction: .followRecognition
+                )
+                Button {
+                    activeCorrection = nil
+                } label: {
+                    Label("完成", systemImage: "checkmark.circle")
+                        .foregroundStyle(
+                            activeCorrection == nil ? Color.secondary : Color.green
+                        )
+                }
+                .buttonStyle(.plain)
+                .help("退出摆棋或擦棋模式")
+            }
+            .font(.caption2)
+            .frame(height: 18)
+        }
+        .frame(width: boardWidth)
+        .help(editorHelpText)
+    }
+
+    private var editorHelpText: String {
+        switch activeCorrection {
+        case .piece(let piece):
+            return "点击棋盘格放置\(piece.kind.displayName(side: piece.side))"
+        case .empty:
+            return "点击棋盘格擦除棋子"
+        case .followRecognition:
+            return "点击棋盘格取消人工修正，恢复截图识别"
+        case nil:
+            return "选择摆棋、擦棋或恢复自动，然后点击棋盘格"
+        }
+    }
+
+    private func editorPieceRow(side: PieceSide) -> some View {
+        HStack(spacing: 4) {
+            Text(side == .red ? "红" : "黑")
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(side == .red ? .red : .primary)
+                .frame(width: 14)
+            ForEach(PieceKind.allCases, id: \.self) { kind in
+                let piece = Piece(kind: kind, side: side)
+                let correction = BoardSquareCorrection.piece(piece)
+                let isSelected = activeCorrection == correction
+                Button {
+                    activeCorrection = correction
+                } label: {
+                    Text(kind.displayName(side: side))
+                        .font(.system(size: 11, weight: .bold, design: .serif))
+                        .foregroundStyle(side == .red ? .red : .primary)
+                        .frame(width: 25, height: 20)
+                        .background(
+                            Capsule().fill(
+                                isSelected
+                                    ? Color.green.opacity(0.42)
+                                    : Color.black.opacity(0.16)
+                            )
+                        )
+                        .overlay(
+                            Capsule().stroke(
+                                isSelected ? Color.green : Color.white.opacity(0.12),
+                                lineWidth: isSelected ? 1.5 : 0.5
+                            )
+                        )
+                }
+                .buttonStyle(.plain)
+                .help("选择\(side == .red ? "红方" : "黑方")\(kind.displayName(side: side))，然后点击棋盘格")
+            }
+        }
+    }
+
+    private func editorToolButton(
+        title: String,
+        systemImage: String,
+        correction: BoardSquareCorrection
+    ) -> some View {
+        let isSelected = activeCorrection == correction
+        return Button {
+            activeCorrection = correction
+        } label: {
+            Label(title, systemImage: systemImage)
+                .foregroundStyle(isSelected ? .green : .primary)
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private func correctionMenu(for position: BoardPosition) -> some View {
+        Button("恢复自动识别") {
+            vm.onCorrectBoardSquare?(position, .followRecognition)
+        }
+        Button("清空这个位置") {
+            vm.onCorrectBoardSquare?(position, .empty)
+        }
+        Divider()
+        Menu("放置红方棋子") {
+            correctionButtons(side: .red, position: position)
+        }
+        Menu("放置黑方棋子") {
+            correctionButtons(side: .black, position: position)
+        }
+    }
+
+    @ViewBuilder
+    private func correctionButtons(
+        side: PieceSide,
+        position: BoardPosition
+    ) -> some View {
+        ForEach(PieceKind.allCases, id: \.self) { kind in
+            Button(kind.displayName(side: side)) {
+                vm.onCorrectBoardSquare?(
+                    position,
+                    .piece(Piece(kind: kind, side: side))
+                )
             }
         }
     }

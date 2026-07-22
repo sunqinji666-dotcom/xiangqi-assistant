@@ -63,7 +63,10 @@ class BoardRecognizer {
 
     init(library: TemplateLibrary? = nil) {
         self.templateLibrary = library ?? TemplateLibrary.load()
-        self.boardGeometry = BoardGeometry.load()
+        // AppDelegate applies geometry only after it has matched the saved
+        // rectangle to the selected capture source. Loading the legacy global
+        // file here could briefly apply another application's crop.
+        self.boardGeometry = nil
         self.theOneRecognizer = TheOneLayoutRecognizer()
         self.theOnePoseRecognizer = TheOnePoseRecognizer()
     }
@@ -126,19 +129,44 @@ class BoardRecognizer {
         // the old per-cell Vision/template failure mode.
         if let model = theOneRecognizer,
            let prediction = model.recognize(boardImage: boardImage) {
-            let state = prediction.state
+            var chosenPrediction = prediction
+            var chosenRect = boardRect
+
+            // A saved rectangle is a useful anchor, not a permanent truth.
+            // Responsive chess clients move/resize the board when sidebars or
+            // the window size changes. If the pose locator finds a different
+            // crop that also produces a structurally valid board, compare the
+            // two complete-board predictions and use the stronger one.
+            if boardGeometry != nil,
+               let poseRect = theOnePoseRecognizer?.boardRect(in: image),
+               rectDistance(poseRect, boardRect) > 0.01,
+               let poseImage = crop(image: image, to: poseRect),
+               let posePrediction = model.recognize(boardImage: poseImage),
+               posePrediction.state.isValid,
+               (!prediction.state.isValid
+                    || (!posePrediction.state.sameLayout(as: prediction.state)
+                        && posePrediction.confidence > prediction.confidence)) {
+                chosenPrediction = posePrediction
+                chosenRect = poseRect
+            }
+
+            let state = chosenPrediction.state
             if state.isValid {
                 if captureWindowFrame != nil && boardGeometry == nil {
-                    calibratedBoardRect = boardRect
+                    calibratedBoardRect = chosenRect
                 }
                 // TheOne's classifier returns the complete 90-point position.
                 // A valid full-board prediction is passed to the session-level
                 // tracker, which validates it against the last trusted board.
                 recentResults.removeAll(keepingCapacity: true)
                 recentResults.append(state)
-                return RecognitionResult(boardState: state, boardRect: boardRect,
-                                         status: .stable, confidence: prediction.confidence,
-                                         isReversedForDisplay: prediction.wasReversed)
+                return RecognitionResult(
+                    boardState: state,
+                    boardRect: chosenRect,
+                    status: .stable,
+                    confidence: chosenPrediction.confidence,
+                    isReversedForDisplay: chosenPrediction.wasReversed
+                )
             }
 
             // A fixed crop can become stale after the game window is resized.

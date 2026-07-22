@@ -30,6 +30,7 @@ struct BrainLogicHarness {
         }
         try testWindowCandidatePolicy()
         try testBoardOrientationCanonicalization()
+        try testTemporalBoardConsensus()
         try testPerspectiveAndMatePresentation()
         try testStableRecommendation()
         try testAggressiveMateSafety()
@@ -37,6 +38,25 @@ struct BrainLogicHarness {
         try testTerminalBoard()
         try await testLineMailbox()
         try await testRealEngine()
+    }
+
+    private static func testTemporalBoardConsensus() throws {
+        let initial = BoardState.initialPosition()
+        var observations: [BoardState] = []
+        for index in 0..<7 {
+            var noisy = initial
+            // Different marker-affected cells flicker on different frames;
+            // no single corrupted value owns a two-thirds majority.
+            if index == 0 { noisy[1, 2] = nil }
+            if index == 1 { noisy[7, 2] = nil }
+            if index == 2 { noisy[0, 3] = nil }
+            observations.append(noisy)
+        }
+        let consensus = BoardState.temporalConsensus(from: observations)
+        try expect(
+            consensus?.sameLayout(as: initial) == true,
+            "temporal board consensus did not reject flickering cells"
+        )
     }
 
     private static func testWindowCandidatePolicy() throws {

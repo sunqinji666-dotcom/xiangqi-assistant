@@ -2,9 +2,9 @@ import Foundation
 
 // MARK: - Piece Types
 
-enum PieceSide: Hashable { case red, black }
+enum PieceSide: String, Codable, Hashable { case red, black }
 
-enum PieceKind: String, CaseIterable, Hashable {
+enum PieceKind: String, CaseIterable, Codable, Hashable {
     case king   = "K"  // 将/帅
     case advisor = "A" // 士/仕
     case bishop = "B"  // 象/相
@@ -31,7 +31,7 @@ enum PieceKind: String, CaseIterable, Hashable {
     }
 }
 
-struct Piece: Hashable {
+struct Piece: Codable, Hashable {
     let kind: PieceKind
     let side: PieceSide
 }
@@ -49,7 +49,7 @@ struct BoardPosition: Hashable {
 // MARK: - Board State
 
 /// Full 9×10 board state
-struct BoardState: Equatable {
+struct BoardState: Codable, Equatable {
     // 10 rows × 9 cols, nil = empty
     var grid: [[Piece?]] = Array(repeating: Array(repeating: nil, count: 9), count: 10)
     var redToMove: Bool = true
@@ -134,6 +134,37 @@ struct BoardState: Equatable {
     /// state, so it must not make two identical screenshots look different.
     func sameLayout(as other: BoardState) -> Bool {
         grid == other.grid
+    }
+
+    /// Builds a stationary mid-game baseline from several noisy full-board
+    /// observations. Voting happens independently at all 90 intersections, so
+    /// one cell flickering under a move/selection marker cannot prevent the
+    /// remaining stable board from being established.
+    static func temporalConsensus(
+        from observations: [BoardState],
+        minimumAgreement: Double = 0.67
+    ) -> BoardState? {
+        guard !observations.isEmpty else { return nil }
+        let requiredVotes = max(
+            1,
+            Int(ceil(Double(observations.count) * minimumAgreement))
+        )
+        var consensus = BoardState()
+        consensus.redToMove = observations.last?.redToMove ?? true
+
+        for row in 0..<10 {
+            for col in 0..<9 {
+                var votes: [Piece?: Int] = [:]
+                for observation in observations {
+                    votes[observation[col, row], default: 0] += 1
+                }
+                guard let winner = votes.max(by: { $0.value < $1.value }),
+                      winner.value >= requiredVotes
+                else { return nil }
+                consensus[col, row] = winner.key
+            }
+        }
+        return consensus.isValid ? consensus : nil
     }
 
     /// Converts a board rendered from the opposite player's viewpoint back to

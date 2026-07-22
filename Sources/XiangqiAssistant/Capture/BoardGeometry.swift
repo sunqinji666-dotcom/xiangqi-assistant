@@ -45,16 +45,12 @@ struct BoardGeometry: Codable {
         if let windowNormalizedRect { return windowNormalizedRect }
         // Board rect in macOS screen coords
         let br = screenRect
-        // SCWindow uses Quartz coordinates (top-left origin), whereas the
-        // selector stores AppKit coordinates (bottom-left origin). Convert the
-        // complete window rect once before comparing the two.
-        let mainMaxY = NSScreen.main?.frame.maxY ?? CGFloat(CGDisplayBounds(CGMainDisplayID()).height)
-        let appKitWindow = CGRect(
-            x: windowFrame.minX,
-            y: mainMaxY - windowFrame.maxY,
-            width: windowFrame.width,
-            height: windowFrame.height
-        )
+        // SCWindow uses Quartz coordinates while the selector stores AppKit
+        // coordinates. A conversion based only on the main display's maxY is
+        // wrong for displays arranged above/below the MacBook screen. Match
+        // the display containing the target window and convert in that
+        // display's local coordinate system instead.
+        let appKitWindow = Self.appKitRect(fromQuartzRect: windowFrame)
         // Relative to the window
         let relX = (br.minX - appKitWindow.minX) / appKitWindow.width
         let relY = (br.minY - appKitWindow.minY) / appKitWindow.height
@@ -67,13 +63,48 @@ struct BoardGeometry: Codable {
     func storingWindowRelativeRect(windowFrame: CGRect) -> BoardGeometry {
         var copy = self
         let normalized = normalizedBoardRect(imageSize: .zero, windowFrame: windowFrame)
-        if normalized.minX >= 0,
-           normalized.minY >= 0,
-           normalized.maxX <= 1,
-           normalized.maxY <= 1 {
-            copy.windowNormalizedRect = normalized
+        let unit = CGRect(x: 0, y: 0, width: 1, height: 1)
+        let clipped = normalized.intersection(unit)
+        let originalArea = normalized.width * normalized.height
+        let clippedArea = max(0, clipped.width) * max(0, clipped.height)
+        // Piece circles commonly extend a few pixels beyond the visible
+        // content bounds. Accept and clip a selection when essentially all of
+        // it belongs to the selected window; reject only a genuinely wrong
+        // window/screen.
+        if !clipped.isNull,
+           originalArea > 0,
+           clippedArea / originalArea >= 0.90,
+           clipped.width > 0.05,
+           clipped.height > 0.05 {
+            copy.windowNormalizedRect = clipped
         }
         return copy
+    }
+
+    private static func appKitRect(fromQuartzRect rect: CGRect) -> CGRect {
+        let candidates: [(screen: NSScreen, quartz: CGRect)] = NSScreen.screens.compactMap {
+            screen in
+            guard let number = screen.deviceDescription[
+                NSDeviceDescriptionKey("NSScreenNumber")
+            ] as? NSNumber else { return nil }
+            return (screen, CGDisplayBounds(number.uint32Value))
+        }
+        if let match = candidates.max(by: { lhs, rhs in
+            let l = lhs.quartz.intersection(rect)
+            let r = rhs.quartz.intersection(rect)
+            return l.width * l.height < r.width * r.height
+        }) {
+            return CGRect(
+                x: match.screen.frame.minX + rect.minX - match.quartz.minX,
+                y: match.screen.frame.maxY - (rect.maxY - match.quartz.minY),
+                width: rect.width,
+                height: rect.height
+            )
+        }
+        let mainMaxY = NSScreen.main?.frame.maxY
+            ?? CGFloat(CGDisplayBounds(CGMainDisplayID()).height)
+        return CGRect(x: rect.minX, y: mainMaxY - rect.maxY,
+                      width: rect.width, height: rect.height)
     }
 
     /// Convert screen coordinates to normalized coordinates for a primary
@@ -116,17 +147,5 @@ struct BoardGeometry: Codable {
 
     static func delete() {
         try? FileManager.default.removeItem(at: saveURL)
-    }
-}
-
-// MARK: - CGPoint Codable
-extension CGPoint: @retroactive Codable {
-    public init(from decoder: Decoder) throws {
-        var c = try decoder.unkeyedContainer()
-        self.init(x: try c.decode(CGFloat.self), y: try c.decode(CGFloat.self))
-    }
-    public func encode(to encoder: Encoder) throws {
-        var c = encoder.unkeyedContainer()
-        try c.encode(x); try c.encode(y)
     }
 }
