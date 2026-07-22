@@ -1,0 +1,15 @@
+.DS_Store
+.build/
+DerivedData/
+dist/
+/Engine/
+HANDOVER.md
+*.xcarchive
+*.dSYM
+*.zip
+*.sha256
+XiangqiAssistant.xcodeproj/xcuserdata/
+XiangqiAssistant.xcodeproj/project.xcworkspace/xcuserdata/
+*.xcuserstate
+*.xccheckout
+*.xcscmblueprint

@@ -1,0 +1,492 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0720618DC3DEE0125615E7A6 /* UCIMove.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EAA0D26E9204EDCC20AD1FA /* UCIMove.swift */; };
+		0F4D42AE43126979845556BD /* PikafishEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C82E9BDBAE4125F621FD266 /* PikafishEngine.swift */; };
+		15F4A46F1924FE6ED7C9F146 /* onnxruntime in Frameworks */ = {isa = PBXBuildFile; productRef = 124E2FFC90DE2F498866F325 /* onnxruntime */; };
+		16E5DE01460C82D4C2C5B4A5 /* FloatingPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A09A74A6A2B111CE8EF98648 /* FloatingPanel.swift */; };
+		31DBCAEE9EF4AB6D35D82A86 /* BoardState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A3D0C10C5CDF739BF1D8E6 /* BoardState.swift */; };
+		3B3464F07C918055F09C71E2 /* StrengthProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = E568F517D064346A8C0B0B73 /* StrengthProfile.swift */; };
+		5855C8CDBDE94AD5907D51F3 /* TheOnePoseRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7B7057A85B6149107D92779 /* TheOnePoseRecognizer.swift */; };
+		69CAF5FB2424D6A6FC4070A7 /* CalibrationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69C1F182A961875C9B74C98A /* CalibrationManager.swift */; };
+		7114F79A9F86FD098A5221FB /* BoardGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CB9453EA31ADFD9082DAEA4 /* BoardGeometry.swift */; };
+		8F50FCB69634DB6A5A7D59E9 /* BoardPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957829BC25F2096085727B38 /* BoardPreviewView.swift */; };
+		9894D34FF88AACED8569D537 /* ChineseNotation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DF3F80251366098B423956B /* ChineseNotation.swift */; };
+		98FA0F78CF7C1916C627E24C /* ScreenCaptureManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 700B37256447297C507D69B7 /* ScreenCaptureManager.swift */; };
+		9B9FA2B849B955251D79B6C6 /* TheOneLayoutRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 473770CE6B1F93AC9A186D52 /* TheOneLayoutRecognizer.swift */; };
+		BC1085A1C65A1610066D5DC5 /* AssistantView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFE77AA49DD6185868A45478 /* AssistantView.swift */; };
+		C5924C9B2A3B19F3C765460A /* TemplateLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 356EF78930D7492FD88C7B9A /* TemplateLibrary.swift */; };
+		E96A9D98A1EE4626CF83029A /* BoardSelectorOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FC4786089340EF39A37AEA9 /* BoardSelectorOverlay.swift */; };
+		EDB9D7F8F3568728F68F0793 /* XiangqiAssistantApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2126FB7590E6C200ACBE363D /* XiangqiAssistantApp.swift */; };
+		EF2D6856A75093973D2620E4 /* BoardRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8770D1866AC192562DCF6D3A /* BoardRecognizer.swift */; };
+		FCDEDB2A14849D1229EEAA79 /* AggressiveMoveSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1614AB2AC234D38525169757 /* AggressiveMoveSelector.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0FC4786089340EF39A37AEA9 /* BoardSelectorOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardSelectorOverlay.swift; sourceTree = "<group>"; };
+		1614AB2AC234D38525169757 /* AggressiveMoveSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AggressiveMoveSelector.swift; sourceTree = "<group>"; };
+		1DF3F80251366098B423956B /* ChineseNotation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChineseNotation.swift; sourceTree = "<group>"; };
+		2126FB7590E6C200ACBE363D /* XiangqiAssistantApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XiangqiAssistantApp.swift; sourceTree = "<group>"; };
+		33A3D0C10C5CDF739BF1D8E6 /* BoardState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardState.swift; sourceTree = "<group>"; };
+		356EF78930D7492FD88C7B9A /* TemplateLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateLibrary.swift; sourceTree = "<group>"; };
+		473770CE6B1F93AC9A186D52 /* TheOneLayoutRecognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TheOneLayoutRecognizer.swift; sourceTree = "<group>"; };
+		4EAA0D26E9204EDCC20AD1FA /* UCIMove.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UCIMove.swift; sourceTree = "<group>"; };
+		69C1F182A961875C9B74C98A /* CalibrationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalibrationManager.swift; sourceTree = "<group>"; };
+		700B37256447297C507D69B7 /* ScreenCaptureManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenCaptureManager.swift; sourceTree = "<group>"; };
+		8770D1866AC192562DCF6D3A /* BoardRecognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardRecognizer.swift; sourceTree = "<group>"; };
+		957829BC25F2096085727B38 /* BoardPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardPreviewView.swift; sourceTree = "<group>"; };
+		9C82E9BDBAE4125F621FD266 /* PikafishEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PikafishEngine.swift; sourceTree = "<group>"; };
+		9CB9453EA31ADFD9082DAEA4 /* BoardGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardGeometry.swift; sourceTree = "<group>"; };
+		A09A74A6A2B111CE8EF98648 /* FloatingPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingPanel.swift; sourceTree = "<group>"; };
+		A0FA0E16F13EC10F97E04A5A /* XiangqiAssistant.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = XiangqiAssistant.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C7B7057A85B6149107D92779 /* TheOnePoseRecognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TheOnePoseRecognizer.swift; sourceTree = "<group>"; };
+		E568F517D064346A8C0B0B73 /* StrengthProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrengthProfile.swift; sourceTree = "<group>"; };
+		EFE77AA49DD6185868A45478 /* AssistantView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		761E45F66A85DBF6A29EE664 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				15F4A46F1924FE6ED7C9F146 /* onnxruntime in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		150DC9F9CFAFEC9A63CD2889 /* Recognition */ = {
+			isa = PBXGroup;
+			children = (
+				8770D1866AC192562DCF6D3A /* BoardRecognizer.swift */,
+				33A3D0C10C5CDF739BF1D8E6 /* BoardState.swift */,
+				69C1F182A961875C9B74C98A /* CalibrationManager.swift */,
+				356EF78930D7492FD88C7B9A /* TemplateLibrary.swift */,
+				473770CE6B1F93AC9A186D52 /* TheOneLayoutRecognizer.swift */,
+				C7B7057A85B6149107D92779 /* TheOnePoseRecognizer.swift */,
+			);
+			path = Recognition;
+			sourceTree = "<group>";
+		};
+		20D11A7460350BE47D823889 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A0FA0E16F13EC10F97E04A5A /* XiangqiAssistant.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		93620AD5CCECDD363933FAD3 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				EFE77AA49DD6185868A45478 /* AssistantView.swift */,
+				957829BC25F2096085727B38 /* BoardPreviewView.swift */,
+				A09A74A6A2B111CE8EF98648 /* FloatingPanel.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		A3FCA4D9A1CDC23FFF6A8DDA = {
+			isa = PBXGroup;
+			children = (
+				BA07EF75B0B2EACF20A9E220 /* Sources */,
+				20D11A7460350BE47D823889 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		AB477F78A595232621877735 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				2126FB7590E6C200ACBE363D /* XiangqiAssistantApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		BA07EF75B0B2EACF20A9E220 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				BA2953E50CB27C01E4C33294 /* XiangqiAssistant */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		BA2953E50CB27C01E4C33294 /* XiangqiAssistant */ = {
+			isa = PBXGroup;
+			children = (
+				AB477F78A595232621877735 /* App */,
+				C83541F14C5F9E4CCBF642D5 /* Capture */,
+				BD482580BAAE15906AF5BC2D /* Engine */,
+				150DC9F9CFAFEC9A63CD2889 /* Recognition */,
+				93620AD5CCECDD363933FAD3 /* UI */,
+			);
+			path = XiangqiAssistant;
+			sourceTree = "<group>";
+		};
+		BD482580BAAE15906AF5BC2D /* Engine */ = {
+			isa = PBXGroup;
+			children = (
+				1614AB2AC234D38525169757 /* AggressiveMoveSelector.swift */,
+				1DF3F80251366098B423956B /* ChineseNotation.swift */,
+				9C82E9BDBAE4125F621FD266 /* PikafishEngine.swift */,
+				E568F517D064346A8C0B0B73 /* StrengthProfile.swift */,
+				4EAA0D26E9204EDCC20AD1FA /* UCIMove.swift */,
+			);
+			path = Engine;
+			sourceTree = "<group>";
+		};
+		C83541F14C5F9E4CCBF642D5 /* Capture */ = {
+			isa = PBXGroup;
+			children = (
+				9CB9453EA31ADFD9082DAEA4 /* BoardGeometry.swift */,
+				0FC4786089340EF39A37AEA9 /* BoardSelectorOverlay.swift */,
+				700B37256447297C507D69B7 /* ScreenCaptureManager.swift */,
+			);
+			path = Capture;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		BB904664F85B0AC673EA648D /* XiangqiAssistant */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5A2BD10580402819ACEF19D1 /* Build configuration list for PBXNativeTarget "XiangqiAssistant" */;
+			buildPhases = (
+				E15BEDB3E32D151987318E79 /* Bundle Pikafish Engine */,
+				FA4EDEA15351EF8E21817A03 /* Bundle TheOne1006 Models */,
+				A101E457F086CCA19414F7BB /* Sources */,
+				761E45F66A85DBF6A29EE664 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = XiangqiAssistant;
+			packageProductDependencies = (
+				124E2FFC90DE2F498866F325 /* onnxruntime */,
+			);
+			productName = XiangqiAssistant;
+			productReference = A0FA0E16F13EC10F97E04A5A /* XiangqiAssistant.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		FA2AB2D9DD936F9773FF9561 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					BB904664F85B0AC673EA648D = {
+						ProvisioningStyle = Manual;
+					};
+				};
+			};
+			buildConfigurationList = 63CA8F2898D43DCB0D5D5BCE /* Build configuration list for PBXProject "XiangqiAssistant" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = A3FCA4D9A1CDC23FFF6A8DDA;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				818EC4E9EB9248497BE898A5 /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 20D11A7460350BE47D823889 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				BB904664F85B0AC673EA648D /* XiangqiAssistant */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		E15BEDB3E32D151987318E79 /* Bundle Pikafish Engine */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Bundle Pikafish Engine";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "ENGINE_DIR=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/Engine\"\nmkdir -p \"$ENGINE_DIR\"\ncp \"${SRCROOT}/Sources/XiangqiAssistant/Resources/Engine/pikafish.nnue\" \"$ENGINE_DIR/\"\ncp \"${SRCROOT}/Sources/XiangqiAssistant/Resources/Engine/pikafish-apple-silicon\" \"$ENGINE_DIR/\"\nchmod +x \"$ENGINE_DIR/pikafish-apple-silicon\"\n";
+		};
+		FA4EDEA15351EF8E21817A03 /* Bundle TheOne1006 Models */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Bundle TheOne1006 Models";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "MODEL_DIR=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/Recognition/TheOne1006\"\nmkdir -p \"$MODEL_DIR\"\ncp \"${SRCROOT}/Sources/XiangqiAssistant/Resources/Recognition/TheOne1006/layout_recognition.onnx\" \"$MODEL_DIR/\"\ncp \"${SRCROOT}/Sources/XiangqiAssistant/Resources/Recognition/TheOne1006/pose.onnx\" \"$MODEL_DIR/\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A101E457F086CCA19414F7BB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FCDEDB2A14849D1229EEAA79 /* AggressiveMoveSelector.swift in Sources */,
+				BC1085A1C65A1610066D5DC5 /* AssistantView.swift in Sources */,
+				7114F79A9F86FD098A5221FB /* BoardGeometry.swift in Sources */,
+				8F50FCB69634DB6A5A7D59E9 /* BoardPreviewView.swift in Sources */,
+				EF2D6856A75093973D2620E4 /* BoardRecognizer.swift in Sources */,
+				E96A9D98A1EE4626CF83029A /* BoardSelectorOverlay.swift in Sources */,
+				31DBCAEE9EF4AB6D35D82A86 /* BoardState.swift in Sources */,
+				69CAF5FB2424D6A6FC4070A7 /* CalibrationManager.swift in Sources */,
+				9894D34FF88AACED8569D537 /* ChineseNotation.swift in Sources */,
+				16E5DE01460C82D4C2C5B4A5 /* FloatingPanel.swift in Sources */,
+				0F4D42AE43126979845556BD /* PikafishEngine.swift in Sources */,
+				98FA0F78CF7C1916C627E24C /* ScreenCaptureManager.swift in Sources */,
+				3B3464F07C918055F09C71E2 /* StrengthProfile.swift in Sources */,
+				C5924C9B2A3B19F3C765460A /* TemplateLibrary.swift in Sources */,
+				9B9FA2B849B955251D79B6C6 /* TheOneLayoutRecognizer.swift in Sources */,
+				5855C8CDBDE94AD5907D51F3 /* TheOnePoseRecognizer.swift in Sources */,
+				0720618DC3DEE0125615E7A6 /* UCIMove.swift in Sources */,
+				EDB9D7F8F3568728F68F0793 /* XiangqiAssistantApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		16741EFC7F18A7FFBD22DDC6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = XiangqiAssistant.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.xiangqi.XiangqiAssistant.TheOne;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		49A988AF9F85E1F00A8120A4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_ENTITLEMENTS = XiangqiAssistant.entitlements;
+				CODE_SIGN_IDENTITY = "Xiangqi Pilot Dedicated Signing";
+				CODE_SIGN_STYLE = Manual;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_FILE = Info.plist;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xiangqi.XiangqiAssistant.TheOne;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+		AE712E3CBE0331B8831A6828 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = XiangqiAssistant.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.xiangqi.XiangqiAssistant.TheOne;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		C826913EB185FF25285CE173 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_ENTITLEMENTS = XiangqiAssistant.entitlements;
+				CODE_SIGN_IDENTITY = "Xiangqi Pilot Dedicated Signing";
+				CODE_SIGN_STYLE = Manual;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_FILE = Info.plist;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xiangqi.XiangqiAssistant.TheOne;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		5A2BD10580402819ACEF19D1 /* Build configuration list for PBXNativeTarget "XiangqiAssistant" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AE712E3CBE0331B8831A6828 /* Debug */,
+				16741EFC7F18A7FFBD22DDC6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		63CA8F2898D43DCB0D5D5BCE /* Build configuration list for PBXProject "XiangqiAssistant" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C826913EB185FF25285CE173 /* Debug */,
+				49A988AF9F85E1F00A8120A4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		818EC4E9EB9248497BE898A5 /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/microsoft/onnxruntime-swift-package-manager.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.24.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		124E2FFC90DE2F498866F325 /* onnxruntime */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 818EC4E9EB9248497BE898A5 /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */;
+			productName = onnxruntime;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = FA2AB2D9DD936F9773FF9561 /* Project object */;
+}

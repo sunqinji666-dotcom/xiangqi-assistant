@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>象棋助手-TheOne</string>
+    <key>CFBundleDisplayName</key>
+    <string>象棋助手-TheOne</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.xiangqi.XiangqiAssistant.TheOne</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>14.0</string>
+    <!-- 不在 Dock 显示，只在菜单栏 -->
+    <key>LSUIElement</key>
+    <true/>
+    <!-- 屏幕录制权限说明 -->
+    <key>NSScreenCaptureUsageDescription</key>
+    <string>象棋助手需要屏幕录制权限来识别棋盘局面。</string>
+    <!-- 辅助功能权限说明（自动走棋功能） -->
+    <key>NSAccessibilityUsageDescription</key>
+    <string>象棋助手仅读取象棋巫师右侧棋谱来核验局面；不会点击棋盘或控制鼠标。</string>
+</dict>
+</plist>
