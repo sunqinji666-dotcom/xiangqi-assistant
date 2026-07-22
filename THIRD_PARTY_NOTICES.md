@@ -24,3 +24,7 @@ The bundled Pikafish executable runs as a separate UCI process. Redistribution a
 - Role: board layout recognition and board-corner localization
 
 These model files are treated as separate runtime assets. Their provenance and redistribution terms are not replaced by this repository's MIT license. Downstream distributors are responsible for confirming that their intended use and redistribution comply with the model provider's terms.
+
+## Offline opening book
+
+`opening_book_v1.json` is a project-authored factual compilation of conservative, commonly known Xiangqi opening branches. It does not copy or redistribute a commercial or online game database. Every record carries project provenance, is checked for legality, and remains only an input to independent Pikafish verification.

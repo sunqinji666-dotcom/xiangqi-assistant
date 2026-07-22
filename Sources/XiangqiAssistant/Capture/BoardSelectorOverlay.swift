@@ -15,11 +15,21 @@ class BoardSelectorOverlay: NSObject {
 
     // MARK: Show / Hide
 
-    func show() {
-        // Choose the display under the pointer. `NSScreen.main` is merely the
-        // display with the menu bar and is often not where the chess window is.
+    func show(displayID: UInt32? = nil) {
+        // Prefer the display containing the selected capture window. Falling
+        // back to the pointer still supports explicit full-screen capture.
         let pointer = NSEvent.mouseLocation
-        guard let screen = NSScreen.screens.first(where: { $0.frame.contains(pointer) }) ?? NSScreen.main else { return }
+        let requestedScreen = displayID.flatMap { requestedDisplayID in
+            NSScreen.screens.first { screen in
+                (screen.deviceDescription[
+                    NSDeviceDescriptionKey("NSScreenNumber")
+                ] as? NSNumber)?.uint32Value == requestedDisplayID
+            }
+        }
+        guard let screen = requestedScreen
+            ?? NSScreen.screens.first(where: { $0.frame.contains(pointer) })
+            ?? NSScreen.main
+        else { return }
 
         let selectorView = SelectorView()
         selectorView.onSelection = { [weak self] selectedRect in
@@ -32,7 +42,8 @@ class BoardSelectorOverlay: NSObject {
                 topLeft:     CGPoint(x: selectedRect.minX, y: selectedRect.maxY),
                 bottomRight: CGPoint(x: selectedRect.maxX, y: selectedRect.minY),
                 screenFrame: screen.frame,
-                displayID: (screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value
+                displayID: (screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value,
+                windowNormalizedRect: nil
             )
             self?.onGeometry?(geo)
         }

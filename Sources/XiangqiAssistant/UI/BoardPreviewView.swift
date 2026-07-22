@@ -66,6 +66,7 @@ struct BoardPreviewView: View {
             let dy = h / 9
             let state = vm.lastAnalyzedBoard
             let move = UCIMove(uci: vm.bestMove)
+            let reversed = vm.previewIsReversed
 
             ZStack {
                 // River band
@@ -87,17 +88,21 @@ struct BoardPreviewView: View {
                 .stroke(Color.black.opacity(0.55), lineWidth: 1)
 
                 if let move {
-                    moveArrow(from: point(for: move.from, dx: dx, dy: dy),
-                              to: point(for: move.to, dx: dx, dy: dy))
+                    moveArrow(from: point(for: move.from, dx: dx, dy: dy,
+                                          reversed: reversed),
+                              to: point(for: move.to, dx: dx, dy: dy,
+                                        reversed: reversed))
                         .stroke(.green, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
                     Circle()
                         .stroke(.green, lineWidth: 3)
                         .frame(width: max(24, dx - 2), height: max(24, dy - 2))
-                        .position(point(for: move.from, dx: dx, dy: dy))
+                        .position(point(for: move.from, dx: dx, dy: dy,
+                                        reversed: reversed))
                     Circle()
                         .fill(.green)
                         .frame(width: 9, height: 9)
-                        .position(point(for: move.to, dx: dx, dy: dy))
+                        .position(point(for: move.to, dx: dx, dy: dy,
+                                        reversed: reversed))
                 }
 
                 // Palace diagonals
@@ -129,7 +134,9 @@ struct BoardPreviewView: View {
                                     .background(Circle().fill(Color(red: 0.93, green: 0.73, blue: 0.38)))
                                     .overlay(Circle().stroke(borderColor, lineWidth: isHighlighted ? 3 : 1))
                                     .shadow(radius: 1)
-                                    .position(x: CGFloat(col) * dx, y: CGFloat(row) * dy)
+                                    .position(point(for: BoardPosition(col: col, row: row),
+                                                    dx: dx, dy: dy,
+                                                    reversed: reversed))
                             }
                         }
                     }
@@ -149,8 +156,15 @@ struct BoardPreviewView: View {
             (move.to.col == col && move.to.row == row)
     }
 
-    private func point(for position: BoardPosition, dx: CGFloat, dy: CGFloat) -> CGPoint {
-        CGPoint(x: CGFloat(position.col) * dx, y: CGFloat(position.row) * dy)
+    private func point(
+        for position: BoardPosition,
+        dx: CGFloat,
+        dy: CGFloat,
+        reversed: Bool
+    ) -> CGPoint {
+        let col = reversed ? 8 - position.col : position.col
+        let row = reversed ? 9 - position.row : position.row
+        return CGPoint(x: CGFloat(col) * dx, y: CGFloat(row) * dy)
     }
 
     private func moveArrow(from: CGPoint, to: CGPoint) -> Path {

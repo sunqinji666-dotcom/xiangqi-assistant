@@ -1,0 +1,1494 @@
+{
+  "formatVersion": 1,
+  "bookID": "xiangqi-assistant-curated-offline-v1",
+  "generatedAt": "2026-07-22",
+  "summary": "保守型本地开局候选树；只缩小引擎复核范围，不直接决定推荐走法。",
+  "provenance": [
+    {
+      "id": "project-curated-classics-v1",
+      "title": "XiangqiAssistant 通行开局主干整理 v1",
+      "origin": "由项目根据通行象棋开局名称与保守主干手顺人工整理；未抓取、复制或再分发任何在线或商业谱库。",
+      "license": "Project-authored factual compilation; no third-party database redistributed",
+      "notes": "权重只表示同一局面内的谱路优先级，不是胜率或引擎分数。每个候选必须由运行时 Pikafish 重新复核。"
+    },
+    {
+      "id": "boardstate-legal-validation-v1",
+      "title": "XiangqiAssistant BoardState 合法性复核",
+      "origin": "候选在加载和每次查询时均由项目现有 BoardState.isLegalMove 对当前可信局面与走子方复核。",
+      "license": "Same project source",
+      "notes": "失效、越界、错误走子方、使己方将帅受将等候选会被丢弃。"
+    }
+  ],
+  "entries": [
+    {
+      "key": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "屏风马",
+        "顺炮",
+        "列炮",
+        "仙人指路",
+        "起马局",
+        "飞相局",
+        "挺三兵"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "h2e2",
+          "weight": 560,
+          "line": "中炮屏风马·右马先出"
+        },
+        {
+          "uci": "c3c4",
+          "weight": 258,
+          "line": "仙人指路·对兵转左中炮"
+        },
+        {
+          "uci": "b2e2",
+          "weight": 252,
+          "line": "左中炮屏风马"
+        },
+        {
+          "uci": "h0g2",
+          "weight": 162,
+          "line": "起马局·对马转左中炮"
+        },
+        {
+          "uci": "c0e2",
+          "weight": 154,
+          "line": "飞相局·对卒"
+        },
+        {
+          "uci": "g3g4",
+          "weight": 146,
+          "line": "挺三兵·对兵转左中炮"
+        }
+      ]
+    },
+    {
+      "key": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C2C4/9/RNBAKABNR b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "屏风马",
+        "顺炮",
+        "列炮"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "h9g7",
+          "weight": 194,
+          "line": "中炮屏风马·右马先出"
+        },
+        {
+          "uci": "b9c7",
+          "weight": 190,
+          "line": "中炮屏风马·左马先出"
+        },
+        {
+          "uci": "h7e7",
+          "weight": 90,
+          "line": "顺炮直车"
+        },
+        {
+          "uci": "b7e7",
+          "weight": 86,
+          "line": "列炮稳健展开"
+        }
+      ]
+    },
+    {
+      "key": "rnbakab1r/9/1c4nc1/p1p1p1p1p/9/9/P1P1P1P1P/1C2C4/9/RNBAKABNR w",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "屏风马"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "h0g2",
+          "weight": 194,
+          "line": "中炮屏风马·右马先出"
+        }
+      ]
+    },
+    {
+      "key": "rnbakab1r/9/1c4nc1/p1p1p1p1p/9/9/P1P1P1P1P/1C2C1N2/9/RNBAKAB1R b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "屏风马"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "b9c7",
+          "weight": 100,
+          "line": "中炮屏风马·右马先出"
+        },
+        {
+          "uci": "g6g5",
+          "weight": 94,
+          "line": "中炮屏风马·挺七兵"
+        }
+      ]
+    },
+    {
+      "key": "r1bakab1r/9/1cn3nc1/p1p1p1p1p/9/9/P1P1P1P1P/1C2C1N2/9/RNBAKAB1R w",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "屏风马"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "i0h0",
+          "weight": 198,
+          "line": "中炮屏风马·右马先出"
+        }
+      ]
+    },
+    {
+      "key": "r1bakab1r/9/1cn3nc1/p1p1p1p1p/9/9/P1P1P1P1P/1C2C1N2/9/RNBAKABR1 b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "屏风马"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "i9h9",
+          "weight": 198,
+          "line": "中炮屏风马·右马先出"
+        }
+      ]
+    },
+    {
+      "key": "r1bakabr1/9/1cn3nc1/p1p1p1p1p/9/9/P1P1P1P1P/1C2C1N2/9/RNBAKABR1 w",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "屏风马"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "h0h6",
+          "weight": 198,
+          "line": "中炮屏风马·右马先出"
+        }
+      ]
+    },
+    {
+      "key": "r1bakabnr/9/1cn4c1/p1p1p1p1p/9/9/P1P1P1P1P/1C2C4/9/RNBAKABNR w",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "屏风马"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "h0g2",
+          "weight": 98,
+          "line": "中炮屏风马·左马先出"
+        },
+        {
+          "uci": "c3c4",
+          "weight": 92,
+          "line": "中炮屏风马·黑左马"
+        }
+      ]
+    },
+    {
+      "key": "r1bakabnr/9/1cn4c1/p1p1p1p1p/9/9/P1P1P1P1P/1C2C1N2/9/RNBAKAB1R b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "屏风马"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "h9g7",
+          "weight": 98,
+          "line": "中炮屏风马·左马先出"
+        }
+      ]
+    },
+    {
+      "key": "rnbakab1r/9/1c4nc1/p1p1p3p/6p2/9/P1P1P1P1P/1C2C1N2/9/RNBAKAB1R w",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "屏风马"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "c3c4",
+          "weight": 94,
+          "line": "中炮屏风马·挺七兵"
+        }
+      ]
+    },
+    {
+      "key": "rnbakab1r/9/1c4nc1/p1p1p3p/6p2/2P6/P3P1P1P/1C2C1N2/9/RNBAKAB1R b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "屏风马"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "b9c7",
+          "weight": 94,
+          "line": "中炮屏风马·挺七兵"
+        }
+      ]
+    },
+    {
+      "key": "r1bakab1r/9/1cn3nc1/p1p1p3p/6p2/2P6/P3P1P1P/1C2C1N2/9/RNBAKAB1R w",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "屏风马"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "i0h0",
+          "weight": 94,
+          "line": "中炮屏风马·挺七兵"
+        }
+      ]
+    },
+    {
+      "key": "r1bakabnr/9/1cn4c1/p1p1p1p1p/9/2P6/P3P1P1P/1C2C4/9/RNBAKABNR b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "屏风马"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "h9g7",
+          "weight": 92,
+          "line": "中炮屏风马·黑左马"
+        }
+      ]
+    },
+    {
+      "key": "r1bakab1r/9/1cn3nc1/p1p1p1p1p/9/2P6/P3P1P1P/1C2C4/9/RNBAKABNR w",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "屏风马"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "h0g2",
+          "weight": 92,
+          "line": "中炮屏风马·黑左马"
+        }
+      ]
+    },
+    {
+      "key": "r1bakab1r/9/1cn3nc1/p1p1p1p1p/9/2P6/P3P1P1P/1C2C1N2/9/RNBAKAB1R b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "屏风马"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "i9h9",
+          "weight": 92,
+          "line": "中炮屏风马·黑左马"
+        }
+      ]
+    },
+    {
+      "key": "r1bakabr1/9/1cn3nc1/p1p1p1p1p/9/2P6/P3P1P1P/1C2C1N2/9/RNBAKAB1R w",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "屏风马"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "i0h0",
+          "weight": 92,
+          "line": "中炮屏风马·黑左马"
+        }
+      ]
+    },
+    {
+      "key": "rnbakabnr/9/1c2c4/p1p1p1p1p/9/9/P1P1P1P1P/1C2C4/9/RNBAKABNR w",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "顺炮"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "h0g2",
+          "weight": 90,
+          "line": "顺炮直车"
+        }
+      ]
+    },
+    {
+      "key": "rnbakabnr/9/1c2c4/p1p1p1p1p/9/9/P1P1P1P1P/1C2C1N2/9/RNBAKAB1R b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "顺炮"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "h9g7",
+          "weight": 90,
+          "line": "顺炮直车"
+        }
+      ]
+    },
+    {
+      "key": "rnbakab1r/9/1c2c1n2/p1p1p1p1p/9/9/P1P1P1P1P/1C2C1N2/9/RNBAKAB1R w",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "顺炮"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "i0h0",
+          "weight": 90,
+          "line": "顺炮直车"
+        }
+      ]
+    },
+    {
+      "key": "rnbakab1r/9/1c2c1n2/p1p1p1p1p/9/9/P1P1P1P1P/1C2C1N2/9/RNBAKABR1 b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "顺炮"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "i9h9",
+          "weight": 90,
+          "line": "顺炮直车"
+        }
+      ]
+    },
+    {
+      "key": "rnbakabnr/9/4c2c1/p1p1p1p1p/9/9/P1P1P1P1P/1C2C4/9/RNBAKABNR w",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "列炮"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "h0g2",
+          "weight": 86,
+          "line": "列炮稳健展开"
+        }
+      ]
+    },
+    {
+      "key": "rnbakabnr/9/4c2c1/p1p1p1p1p/9/9/P1P1P1P1P/1C2C1N2/9/RNBAKAB1R b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "列炮"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "b9c7",
+          "weight": 86,
+          "line": "列炮稳健展开"
+        }
+      ]
+    },
+    {
+      "key": "r1bakabnr/9/2n1c2c1/p1p1p1p1p/9/9/P1P1P1P1P/1C2C1N2/9/RNBAKAB1R w",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "列炮"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "i0h0",
+          "weight": 86,
+          "line": "列炮稳健展开"
+        }
+      ]
+    },
+    {
+      "key": "r1bakabnr/9/2n1c2c1/p1p1p1p1p/9/9/P1P1P1P1P/1C2C1N2/9/RNBAKABR1 b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "列炮"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "a9b9",
+          "weight": 86,
+          "line": "列炮稳健展开"
+        }
+      ]
+    },
+    {
+      "key": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/4C2C1/9/RNBAKABNR b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "屏风马",
+        "列炮"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "b9c7",
+          "weight": 88,
+          "line": "左中炮屏风马"
+        },
+        {
+          "uci": "h9g7",
+          "weight": 84,
+          "line": "左中炮双马展开"
+        },
+        {
+          "uci": "b7e7",
+          "weight": 80,
+          "line": "左中炮列炮"
+        }
+      ]
+    },
+    {
+      "key": "r1bakabnr/9/1cn4c1/p1p1p1p1p/9/9/P1P1P1P1P/4C2C1/9/RNBAKABNR w",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "屏风马"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "b0c2",
+          "weight": 88,
+          "line": "左中炮屏风马"
+        }
+      ]
+    },
+    {
+      "key": "r1bakabnr/9/1cn4c1/p1p1p1p1p/9/9/P1P1P1P1P/2N1C2C1/9/R1BAKABNR b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "屏风马"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "h9g7",
+          "weight": 88,
+          "line": "左中炮屏风马"
+        }
+      ]
+    },
+    {
+      "key": "r1bakab1r/9/1cn3nc1/p1p1p1p1p/9/9/P1P1P1P1P/2N1C2C1/9/R1BAKABNR w",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "屏风马"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "a0b0",
+          "weight": 172,
+          "line": "左中炮屏风马"
+        }
+      ]
+    },
+    {
+      "key": "r1bakab1r/9/1cn3nc1/p1p1p1p1p/9/9/P1P1P1P1P/2N1C2C1/9/1RBAKABNR b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "屏风马"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "a9b9",
+          "weight": 172,
+          "line": "左中炮屏风马"
+        }
+      ]
+    },
+    {
+      "key": "1rbakab1r/9/1cn3nc1/p1p1p1p1p/9/9/P1P1P1P1P/2N1C2C1/9/1RBAKABNR w",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "屏风马"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "b0b6",
+          "weight": 88,
+          "line": "左中炮屏风马"
+        }
+      ]
+    },
+    {
+      "key": "rnbakab1r/9/1c4nc1/p1p1p1p1p/9/9/P1P1P1P1P/4C2C1/9/RNBAKABNR w",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "b0c2",
+          "weight": 84,
+          "line": "左中炮双马展开"
+        }
+      ]
+    },
+    {
+      "key": "rnbakab1r/9/1c4nc1/p1p1p1p1p/9/9/P1P1P1P1P/2N1C2C1/9/R1BAKABNR b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "b9c7",
+          "weight": 84,
+          "line": "左中炮双马展开"
+        }
+      ]
+    },
+    {
+      "key": "rnbakabnr/9/4c2c1/p1p1p1p1p/9/9/P1P1P1P1P/4C2C1/9/RNBAKABNR w",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "列炮"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "b0c2",
+          "weight": 80,
+          "line": "左中炮列炮"
+        }
+      ]
+    },
+    {
+      "key": "rnbakabnr/9/4c2c1/p1p1p1p1p/9/9/P1P1P1P1P/2N1C2C1/9/R1BAKABNR b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "列炮"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "b9c7",
+          "weight": 80,
+          "line": "左中炮列炮"
+        }
+      ]
+    },
+    {
+      "key": "r1bakabnr/9/2n1c2c1/p1p1p1p1p/9/9/P1P1P1P1P/2N1C2C1/9/R1BAKABNR w",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "列炮"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "a0b0",
+          "weight": 80,
+          "line": "左中炮列炮"
+        }
+      ]
+    },
+    {
+      "key": "r1bakabnr/9/2n1c2c1/p1p1p1p1p/9/9/P1P1P1P1P/2N1C2C1/9/1RBAKABNR b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "列炮"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "a9b9",
+          "weight": 80,
+          "line": "左中炮列炮"
+        }
+      ]
+    },
+    {
+      "key": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/2P6/P3P1P1P/1C5C1/9/RNBAKABNR b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "屏风马",
+        "仙人指路"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "c6c5",
+          "weight": 88,
+          "line": "仙人指路·对兵转左中炮"
+        },
+        {
+          "uci": "b9c7",
+          "weight": 86,
+          "line": "仙人指路·屏风马转左中炮"
+        },
+        {
+          "uci": "h9g7",
+          "weight": 84,
+          "line": "仙人指路·右马应转左中炮"
+        }
+      ]
+    },
+    {
+      "key": "rnbakabnr/9/1c5c1/p3p1p1p/2p6/2P6/P3P1P1P/1C5C1/9/RNBAKABNR w",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "仙人指路"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "h0g2",
+          "weight": 88,
+          "line": "仙人指路·对兵转左中炮"
+        }
+      ]
+    },
+    {
+      "key": "rnbakabnr/9/1c5c1/p3p1p1p/2p6/2P6/P3P1P1P/1C4NC1/9/RNBAKAB1R b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "仙人指路"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "h9g7",
+          "weight": 88,
+          "line": "仙人指路·对兵转左中炮"
+        }
+      ]
+    },
+    {
+      "key": "rnbakab1r/9/1c4nc1/p3p1p1p/2p6/2P6/P3P1P1P/1C4NC1/9/RNBAKAB1R w",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "仙人指路",
+        "起马局"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "b2e2",
+          "weight": 254,
+          "line": "仙人指路·对兵转左中炮"
+        }
+      ]
+    },
+    {
+      "key": "rnbakab1r/9/1c4nc1/p3p1p1p/2p6/2P6/P3P1P1P/4C1NC1/9/RNBAKAB1R b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "仙人指路",
+        "起马局"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "b9c7",
+          "weight": 254,
+          "line": "仙人指路·对兵转左中炮"
+        }
+      ]
+    },
+    {
+      "key": "rnbakab1r/9/1c4nc1/p1p1p1p1p/9/2P6/P3P1P1P/1C5C1/9/RNBAKABNR w",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "仙人指路"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "h0g2",
+          "weight": 84,
+          "line": "仙人指路·右马应转左中炮"
+        }
+      ]
+    },
+    {
+      "key": "rnbakab1r/9/1c4nc1/p1p1p1p1p/9/2P6/P3P1P1P/1C4NC1/9/RNBAKAB1R b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "仙人指路",
+        "起马局"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "c6c5",
+          "weight": 166,
+          "line": "仙人指路·右马应转左中炮"
+        }
+      ]
+    },
+    {
+      "key": "r1bakabnr/9/1cn4c1/p1p1p1p1p/9/2P6/P3P1P1P/1C5C1/9/RNBAKABNR w",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "屏风马",
+        "仙人指路"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "h0g2",
+          "weight": 86,
+          "line": "仙人指路·屏风马转左中炮"
+        }
+      ]
+    },
+    {
+      "key": "r1bakabnr/9/1cn4c1/p1p1p1p1p/9/2P6/P3P1P1P/1C4NC1/9/RNBAKAB1R b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "屏风马",
+        "仙人指路"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "h9g7",
+          "weight": 86,
+          "line": "仙人指路·屏风马转左中炮"
+        }
+      ]
+    },
+    {
+      "key": "r1bakab1r/9/1cn3nc1/p1p1p1p1p/9/2P6/P3P1P1P/1C4NC1/9/RNBAKAB1R w",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "屏风马",
+        "仙人指路"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "b2e2",
+          "weight": 86,
+          "line": "仙人指路·屏风马转左中炮"
+        }
+      ]
+    },
+    {
+      "key": "r1bakab1r/9/1cn3nc1/p1p1p1p1p/9/2P6/P3P1P1P/4C1NC1/9/RNBAKAB1R b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "屏风马",
+        "仙人指路"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "i9h9",
+          "weight": 86,
+          "line": "仙人指路·屏风马转左中炮"
+        }
+      ]
+    },
+    {
+      "key": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C4NC1/9/RNBAKAB1R b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "起马局"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "h9g7",
+          "weight": 82,
+          "line": "起马局·对马转左中炮"
+        },
+        {
+          "uci": "b9c7",
+          "weight": 80,
+          "line": "起马局·左马应转左中炮"
+        }
+      ]
+    },
+    {
+      "key": "rnbakab1r/9/1c4nc1/p1p1p1p1p/9/9/P1P1P1P1P/1C4NC1/9/RNBAKAB1R w",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "起马局"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "c3c4",
+          "weight": 82,
+          "line": "起马局·对马转左中炮"
+        }
+      ]
+    },
+    {
+      "key": "r1bakabnr/9/1cn4c1/p1p1p1p1p/9/9/P1P1P1P1P/1C4NC1/9/RNBAKAB1R w",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "起马局"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "b2e2",
+          "weight": 80,
+          "line": "起马局·左马应转左中炮"
+        }
+      ]
+    },
+    {
+      "key": "r1bakabnr/9/1cn4c1/p1p1p1p1p/9/9/P1P1P1P1P/4C1NC1/9/RNBAKAB1R b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "起马局"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "h9g7",
+          "weight": 80,
+          "line": "起马局·左马应转左中炮"
+        }
+      ]
+    },
+    {
+      "key": "r1bakab1r/9/1cn3nc1/p1p1p1p1p/9/9/P1P1P1P1P/4C1NC1/9/RNBAKAB1R w",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "起马局"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "i0h0",
+          "weight": 80,
+          "line": "起马局·左马应转左中炮"
+        }
+      ]
+    },
+    {
+      "key": "r1bakab1r/9/1cn3nc1/p1p1p1p1p/9/9/P1P1P1P1P/4C1NC1/9/RNBAKABR1 b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "起马局"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "i9h9",
+          "weight": 80,
+          "line": "起马局·左马应转左中炮"
+        }
+      ]
+    },
+    {
+      "key": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C2B2C1/9/RN1AKABNR b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "飞相局"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "c6c5",
+          "weight": 78,
+          "line": "飞相局·对卒"
+        },
+        {
+          "uci": "h9g7",
+          "weight": 76,
+          "line": "飞相局·右马应"
+        }
+      ]
+    },
+    {
+      "key": "rnbakabnr/9/1c5c1/p3p1p1p/2p6/9/P1P1P1P1P/1C2B2C1/9/RN1AKABNR w",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "飞相局"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "h0g2",
+          "weight": 78,
+          "line": "飞相局·对卒"
+        }
+      ]
+    },
+    {
+      "key": "rnbakabnr/9/1c5c1/p3p1p1p/2p6/9/P1P1P1P1P/1C2B1NC1/9/RN1AKAB1R b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "飞相局"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "h9g7",
+          "weight": 78,
+          "line": "飞相局·对卒"
+        }
+      ]
+    },
+    {
+      "key": "rnbakab1r/9/1c4nc1/p3p1p1p/2p6/9/P1P1P1P1P/1C2B1NC1/9/RN1AKAB1R w",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "飞相局"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "c3c4",
+          "weight": 154,
+          "line": "飞相局·对卒"
+        }
+      ]
+    },
+    {
+      "key": "rnbakab1r/9/1c4nc1/p3p1p1p/2p6/2P6/P3P1P1P/1C2B1NC1/9/RN1AKAB1R b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "飞相局"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "b9c7",
+          "weight": 154,
+          "line": "飞相局·对卒"
+        }
+      ]
+    },
+    {
+      "key": "rnbakab1r/9/1c4nc1/p1p1p1p1p/9/9/P1P1P1P1P/1C2B2C1/9/RN1AKABNR w",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "飞相局"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "h0g2",
+          "weight": 76,
+          "line": "飞相局·右马应"
+        }
+      ]
+    },
+    {
+      "key": "rnbakab1r/9/1c4nc1/p1p1p1p1p/9/9/P1P1P1P1P/1C2B1NC1/9/RN1AKAB1R b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "飞相局"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "c6c5",
+          "weight": 76,
+          "line": "飞相局·右马应"
+        }
+      ]
+    },
+    {
+      "key": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/6P2/P1P1P3P/1C5C1/9/RNBAKABNR b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "屏风马",
+        "挺三兵"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "g6g5",
+          "weight": 74,
+          "line": "挺三兵·对兵转左中炮"
+        },
+        {
+          "uci": "h9g7",
+          "weight": 72,
+          "line": "挺三兵·屏风马转左中炮"
+        }
+      ]
+    },
+    {
+      "key": "rnbakabnr/9/1c5c1/p1p1p3p/6p2/6P2/P1P1P3P/1C5C1/9/RNBAKABNR w",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "挺三兵"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "h0g2",
+          "weight": 74,
+          "line": "挺三兵·对兵转左中炮"
+        }
+      ]
+    },
+    {
+      "key": "rnbakabnr/9/1c5c1/p1p1p3p/6p2/6P2/P1P1P3P/1C4NC1/9/RNBAKAB1R b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "挺三兵"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "h9g7",
+          "weight": 74,
+          "line": "挺三兵·对兵转左中炮"
+        }
+      ]
+    },
+    {
+      "key": "rnbakab1r/9/1c4nc1/p1p1p3p/6p2/6P2/P1P1P3P/1C4NC1/9/RNBAKAB1R w",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "挺三兵"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "b2e2",
+          "weight": 74,
+          "line": "挺三兵·对兵转左中炮"
+        }
+      ]
+    },
+    {
+      "key": "rnbakab1r/9/1c4nc1/p1p1p3p/6p2/6P2/P1P1P3P/4C1NC1/9/RNBAKAB1R b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "挺三兵"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "b9c7",
+          "weight": 74,
+          "line": "挺三兵·对兵转左中炮"
+        }
+      ]
+    },
+    {
+      "key": "rnbakab1r/9/1c4nc1/p1p1p1p1p/9/6P2/P1P1P3P/1C5C1/9/RNBAKABNR w",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "屏风马",
+        "挺三兵"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "h0g2",
+          "weight": 72,
+          "line": "挺三兵·屏风马转左中炮"
+        }
+      ]
+    },
+    {
+      "key": "rnbakab1r/9/1c4nc1/p1p1p1p1p/9/6P2/P1P1P3P/1C4NC1/9/RNBAKAB1R b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "屏风马",
+        "挺三兵"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "b9c7",
+          "weight": 72,
+          "line": "挺三兵·屏风马转左中炮"
+        }
+      ]
+    },
+    {
+      "key": "r1bakab1r/9/1cn3nc1/p1p1p1p1p/9/6P2/P1P1P3P/1C4NC1/9/RNBAKAB1R w",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "屏风马",
+        "挺三兵"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "b2e2",
+          "weight": 72,
+          "line": "挺三兵·屏风马转左中炮"
+        }
+      ]
+    },
+    {
+      "key": "r1bakab1r/9/1cn3nc1/p1p1p1p1p/9/6P2/P1P1P3P/4C1NC1/9/RNBAKAB1R b",
+      "tags": [
+        "离线",
+        "引擎复核候选",
+        "中炮",
+        "屏风马",
+        "挺三兵"
+      ],
+      "provenanceIDs": [
+        "project-curated-classics-v1",
+        "boardstate-legal-validation-v1"
+      ],
+      "moves": [
+        {
+          "uci": "i9h9",
+          "weight": 72,
+          "line": "挺三兵·屏风马转左中炮"
+        }
+      ]
+    }
+  ]
+}

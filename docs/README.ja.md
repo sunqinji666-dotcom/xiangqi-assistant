@@ -1,60 +1,138 @@
-# 象棋助手 · XiangqiAssistant
+# 象棋アシスタント · XiangqiAssistant
 
-![画面上の中国象棋盤からローカルエンジンの候補手までを示すコンセプト画像](assets/xiangqi-assistant-hero-v1.png)
+![XiangqiAssistant v1.1 コンセプトビジュアル：盤面をローカル認識し、エンジンで候補手を深く検証する流れ](assets/xiangqi-assistant-hero-v2.png)
 
-> 対局を振り返るとき、どの一手から形勢が変わったのか分からないことがあります。XiangqiAssistant は macOS のメニューバーに常駐し、ユーザーが選択した盤面ウィンドウを読み取り、局面をローカルで認識して、Pikafish に検討すべき候補手を問い合わせます。
+<div align="center">
+
+### まず局面を見る。次に、その一手を理解する。
+
+macOS のメニューバーに静かに常駐する中国象棋の研究ツール。盤面ウィンドウを選択すると、局面をローカルで再構成し、早い段階で候補手を示しながらバックグラウンドで検証を深めます。
 
 [简体中文](../README.md) · [English](README.en.md) · **日本語**
 
-現行版：**v1.0.0（Build 1）** · **macOS 14+ / Apple Silicon** · **MIT（第三者コンポーネントを除く）**
+[v1.1.0 をダウンロード](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest) · [1分で始める](#1分で始める) · [仕組み](#1枚の画面から1手の提案へ) · [Star](https://github.com/sunqinji666-dotcom/xiangqi-assistant)
 
-[最新版をダウンロード](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest) · [クイックスタート](#クイックスタート) · [リポジトリを保存](https://github.com/sunqinji666-dotcom/xiangqi-assistant)
+</div>
 
-## このアプリについて
+| 安定版 | 対応環境 | 実行方式 | ライセンス | 最終確認 |
+|---|---|---|---|---|
+| v1.1.0 · Build 2 | macOS 14+ · Apple Silicon | メニューバー · ローカル処理 | MIT、第三者例外あり | 2026-07-23 |
 
-XiangqiAssistant はローカル動作の macOS メニューバーツールです。ScreenCaptureKit でユーザーが明示的に選んだウィンドウだけを取得し、ONNX モデルで中国象棋の盤面を検出・認識します。局面は FEN に変換され、Mac 上の Pikafish エンジンで解析されます。
+## 棋局に必要なのは、情報量より明瞭さ
 
-公開ビルドは学習、棋譜検討、定跡研究を目的としています。盤面を観察して候補手を示しますが、クリックや自動着手は行いません。
+勝負を変える局面は一瞬で訪れます。すべての駒を解析盤へ手で並べ直すと集中が切れ、かといって深いエンジン探索が終わるまで待つと、今すぐ必要な方向性が見えません。
 
-## 主な価値
+XiangqiAssistant は、その間を一つのローカル処理にまとめます。ユーザーが明示的に選んだウィンドウを読み取り、盤面を検出し、信頼できる FEN を作成して、Mac 上の Pikafish に渡します。Ultra モードは約2秒の時点で最初の結果を公開し、局面が変わらなければ通常は約6秒まで深化します。候補手の変動、評価値の揺れ、詰み筋が見つかった複雑な局面では、最大約15秒まで検証します。
 
-- 盤面を一駒ずつ入力せず、画面から読み取れます。
-- スクリーンショット、認識、エンジン解析は Mac 内で完結します。
-- メニューバーから小さなフローティングパネルを開けます。
-- 認識状態、候補手、評価値、探索深度、主要変化を確認できます。
-- 不安定な認識結果を確定情報のように表示しません。
+自動で指すプレイヤーではありません。盤の横にいる静かな研究者のように、まず方向を示し、その後で根拠を強くしていく道具です。
 
-## クイックスタート
+## v1.1.0 の進化
 
-1. [Releases](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest) から `XiangqiAssistant-v1.0.0-macOS-arm64.zip` をダウンロードします。
-2. 展開後、`象棋助手-TheOne.app` を「アプリケーション」へ移動します。
-3. 未確認の開発元として警告された場合は、Finder で Control キーを押しながらアプリをクリックし、「開く」を選びます。
+### 早く答え、必要なら正しく更新する
+
+- **クイック結果**：Ultra モードは約2秒で最初の実用的な候補を表示できます。
+- **適応型深化**：通常局面は約6秒、複雑局面は最大約15秒まで探索します。
+- **局面の分離**：古いスクリーンショットの探索結果が、新しい局面を上書きしません。
+- **安定した提案**：ほぼ同価値の候補が頻繁に入れ替わるのを抑えつつ、明確に良い手や短い詰みは反映します。
+
+### 定跡候補もエンジンの審査を通す
+
+内蔵定跡データは完全オフライン、読み取り専用で、候補ごとに出典情報を保持します。定跡だけで最終手を決めることはありません。候補は合法手であることを確認し、Pikafish の上位候補に入り、安全な評価差の範囲にある場合だけ表示対象になります。
+
+### 理想的な画像ではなく、実際のアプリウィンドウに対応
+
+- Dock や Control Center などのシステムウィンドウを除外しながら、Wine、Electron、iOS-on-Mac の棋譜アプリを一律に排除しません。
+- 対象ウィンドウが再生成された場合は安定した識別情報で再接続し、勝手に画面全体のキャプチャへ切り替えません。
+- 手動選択領域をウィンドウ相対座標で保存し、別ディスプレイへ移動しても再利用できます。
+- 反対向きの盤面を正規化し、合法性、連続フレームの安定性、認識診断を強化しました。
+
+## 1分で始める
+
+1. [Releases](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest) から `XiangqiAssistant-v1.1.0-macOS-arm64.zip` をダウンロードします。
+2. 解凍し、`象棋助手-TheOne.app` を「アプリケーション」へ移動します。
+3. 初回起動を macOS が止めた場合、Finder で右クリックして「開く」を選びます。
 4. 「システム設定 → プライバシーとセキュリティ → 画面収録」で許可します。
-5. 中国象棋の盤面を開き、メニューバーから対象ウィンドウを選択して解析を開始します。
+5. 中国象棋の盤面を開き、メニューバーアイコンからウィンドウ一覧を更新して対象を選びます。
+6. 盤面範囲を確認します。自動検出が不安定な盤面デザインでは手動選択を使います。
 
-現在の配布物は固定ローカル署名ですが、Apple Developer ID による公証は未実施です。
+> 現在の配布版は固定されたローカル署名を使用し、Apple Developer ID による公証は行っていません。初回起動時に手動確認が必要な場合があります。
+
+## 1枚の画面から1手の提案へ
+
+![コンセプト図：ウィンドウ取得、盤面認識、ローカルエンジン探索、候補手表示](assets/xiangqi-assistant-workflow-v2.png)
+
+> 上の画像はコンセプト図であり、実際のアプリ画面ではありません。
+
+| 段階 | 処理 | 信頼性の境界 |
+|---|---|---|
+| 選択 | ユーザーが表示中のアプリウィンドウを明示的に選択 | 初期状態で画面全体を読み取らない |
+| 取得 | ScreenCaptureKit が対象ウィンドウを取得 | 失敗時に全画面へ黙って切り替えない |
+| 認識 | ONNX モデルが盤面を検出し、10×9・16クラスを分類 | 盤構造、両方の王、フレーム安定性を確認 |
+| 正規化 | 視点を統一し、手番付き FEN を生成 | 反対向きの盤を別の棋局として扱わない |
+| 解析 | Pikafish が UCI 経由でローカル探索 | 探索を局面リビジョンに結び、古い出力を破棄 |
+| 表示 | 中国語棋譜、赤側基準評価、深度、詰み距離、PV を表示 | 合法手なしは終局として扱う |
+
+## 3つの解析テンポ
+
+| モード | 探索方針 | 用途 |
+|---|---|---|
+| Normal | 主線1本、約2秒 | 局面の主要な方向を素早く確認 |
+| Aggressive | 約3.5秒で最大4候補を比較 | より積極的な実戦候補を比較し、より早い敗勢は選ばない |
+| Ultra | 2秒の初期結果 → 6秒深化 → 複雑局面は最大15秒 | 検討、戦術局面、詰み筋の確認 |
+
+これらはプログラムに設定された探索予算であり、すべての Mac や局面に対する速度保証ではありません。
+
+## ローカル優先の設計
+
+![コンセプト図：盤面画像、認識、探索をローカル処理領域の中に限定](assets/xiangqi-assistant-local-v2.png)
+
+> 上の画像はコンセプト図です。現在のプロジェクトにクラウド解析サービスはありません。
+
+- キャプチャ画像、盤面認識、FEN、定跡データ、Pikafish 探索は Mac 内で処理します。
+- 棋譜サイトのアカウント、Cookie、API キー、クラウドログインは不要です。
+- テレメトリ、広告 SDK、クラウド同期、実行時アップデート確認を含みません。
+- 画面収録権限は macOS が管理し、いつでも取り消せます。
+- 公開ビルドは `UI/AutoPlayManager.swift` を明示的に除外し、盤面クリックやマウス操作を行いません。
 
 ## 技術構成
 
-```text
-選択ウィンドウ → ScreenCaptureKit → TheOne1006 ONNX 認識
-→ 局面合法性・連続フレーム安定性検査 → FEN → ローカル Pikafish
-→ 候補手・評価値・深度・主要変化を表示
-```
+| レイヤー | 実装 |
+|---|---|
+| デスクトップ体験 | SwiftUI + AppKit `NSPanel` メニューバーアプリ |
+| ウィンドウ取得 | Apple ScreenCaptureKit + 安定 ID による再接続 |
+| 盤面検出 | TheOne1006 pose ONNX モデル |
+| 局面認識 | TheOne1006 10×9・16クラス layout モデル |
+| 推論ランタイム | Microsoft ONNX Runtime 1.24.2 |
+| 局面モデル | 合法性、視点正規化、FEN、リビジョン ID |
+| エンジン | Pikafish を独立ローカルプロセスとして非同期 UCI 接続 |
+| 探索の回復性 | 実時間タイムアウト、EOF/プロセス復旧、停止後の drain、終局処理 |
+| ローカル知識 | 出典・合法性・エンジン再検証を備えたオフライン定跡 |
+| 対象 | Apple Silicon arm64 |
+| Bundle ID | `com.xiangqi.XiangqiAssistant.TheOne` |
 
-SwiftUI / AppKit、Microsoft ONNX Runtime 1.24.2、ローカル認識モデル、arm64 版 Pikafish を使用します。Bundle ID は `com.xiangqi.XiangqiAssistant.TheOne` です。
+### 現在サポートするもの
 
-## 対応範囲と制限
+- 対象ウィンドウの選択、一覧更新、継続監視；
+- 自動盤面検出と、複数ディスプレイで使えるウィンドウ相対手動調整；
+- 正向き・反対向き盤面の正規化；
+- 局面安定性保護、FEN、履歴の連続性；
+- Normal、Aggressive、Ultra のローカル解析；
+- 中国語着法、赤側基準評価、深度、詰み距離、主要変化；
+- エンジン自動復旧と合法手なし終局処理。
 
-ウィンドウ取得、自動・手動の盤面指定、校正、FEN 生成、複数候補解析、中国語棋譜表記、安定性検査に対応します。現時点では Apple Silicon 専用で、未公証です。すべての盤面スキン、倍率、アニメーションへの対応は保証しません。
+### 現在保証しないもの
 
-学習、棋譜検討、オフライン研究に使用し、利用先の規約を守ってください。
+- Intel Mac のネイティブ対応；
+- すべての盤面デザイン、倍率、アニメーション、遮蔽、変則ルールへの完全対応；
+- Apple Developer ID 署名と公証；
+- 自動着手、マウス操作、第三者プラットフォーム規則の回避；
+- 全定跡の網羅、または独立エンジン判断より定跡を優先すること。
 
-## プライバシー
-
-認識と解析はローカルで実行されます。アカウントログイン、クラウド同期、テレメトリ、広告 SDK はありません。画面収録権限は macOS からいつでも取り消せます。配布 target では自動操作モジュールを除外しています。
+学習、検討、UI 認識研究、オフライン解析に使用し、利用する各プラットフォームの規則を守ってください。
 
 ## ソースからビルド
+
+必要環境：macOS 14+、Xcode 15+、Apple Silicon。
 
 ```bash
 git clone https://github.com/sunqinji666-dotcom/xiangqi-assistant.git
@@ -62,12 +140,47 @@ cd xiangqi-assistant
 open XiangqiAssistant.xcodeproj
 ```
 
-必要環境は macOS 14+、Xcode 15+、Apple Silicon です。詳細なビルド方法は中国語 README を参照してください。
-
-## ダウンロード検証
+Xcode で `XiangqiAssistant` scheme を選択します。固定ローカル署名がない場合は、自分の Apple Development 署名へ変更するか、署名なしでビルドします。
 
 ```bash
-shasum -a 256 -c XiangqiAssistant-v1.0.0-macOS-arm64.zip.sha256
+xcodebuild \
+  -project XiangqiAssistant.xcodeproj \
+  -scheme XiangqiAssistant \
+  -configuration Release \
+  -derivedDataPath .build/DerivedData \
+  CODE_SIGNING_ALLOWED=NO build
 ```
 
-第三者コンポーネントにはそれぞれのライセンスが適用されます。[THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md) を参照してください。連絡先：[qinji@jack-sun.com](mailto:qinji@jack-sun.com)。
+`Tests/BrainLogicHarness.swift` は、ウィンドウ選別、視点正規化、評価と詰みの向き、提案安定性、定跡合法性、終局、実時間タイムアウト、探索キャンセルと置換を検証します。完全な UI 自動テストではなく、重要ロジックに絞ったハーネスです。
+
+## リポジトリ構成
+
+```text
+Sources/XiangqiAssistant/
+├── App/            # ライフサイクル、メニューバー、認識と解析の調整
+├── Capture/        # ウィンドウ方針、取得、再接続、選択、座標
+├── Recognition/    # ONNX、校正、向き、局面安定性
+├── Engine/         # Pikafish UCI、適応探索、定跡、着法方針
+├── UI/             # フローティングパネル、盤面プレビュー、状態表示
+└── Resources/      # エンジン、NNUE、ONNX、オフライン定跡
+```
+
+## ダウンロードと検証
+
+配布パッケージとチェックサムは [GitHub Releases](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest) にあります。
+
+```bash
+shasum -a 256 -c XiangqiAssistant-v1.1.0-macOS-arm64.zip.sha256
+```
+
+ファイル名、サイズ、ハッシュが Release ページと異なる場合は実行しないでください。
+
+## ライセンスと協力
+
+オリジナルのソースコードは MIT License です。Pikafish、ONNX Runtime、TheOne1006 モデルはそれぞれのライセンスまたは条件を保持します。Pikafish の再配布・変更には GPLv3 が適用されます。ビルドを再配布する前に [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md) を確認してください。
+
+再現可能な問題報告や互換性情報を歓迎します。公開 Issue にアカウント、Cookie、私的なスクリーンショット、秘密情報を投稿しないでください。
+
+**Jacksun** · [qinji@jack-sun.com](mailto:qinji@jack-sun.com)
+
+局面理解に役立ったら、[リポジトリへ Star](https://github.com/sunqinji666-dotcom/xiangqi-assistant) をお願いします。

@@ -136,6 +136,31 @@ struct BoardState: Equatable {
         grid == other.grid
     }
 
+    /// Converts a board rendered from the opposite player's viewpoint back to
+    /// the engine's canonical coordinate system (black at the top, red at the
+    /// bottom). Piece colours and side to move are preserved.
+    func rotated180() -> BoardState {
+        var rotated = BoardState()
+        rotated.redToMove = redToMove
+        for row in 0..<10 {
+            for col in 0..<9 {
+                rotated[8 - col, 9 - row] = self[col, row]
+            }
+        }
+        return rotated
+    }
+
+    /// The screen model reads the visible rows top-to-bottom. Some clients
+    /// rotate the whole board for the black player, which produces an otherwise
+    /// correct layout whose kings occupy the opposite palaces. Canonicalize
+    /// only when the 180° rotation is structurally valid.
+    func canonicalOrientation() -> (state: BoardState, wasReversed: Bool) {
+        if isValid { return (self, false) }
+        let rotated = rotated180()
+        if rotated.isValid { return (rotated, true) }
+        return (self, false)
+    }
+
     // MARK: Validation
 
     /// Full validity check:

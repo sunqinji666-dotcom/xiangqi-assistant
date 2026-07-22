@@ -17,6 +17,23 @@ struct RecognitionResult {
     let boardRect: CGRect      // 棋盘在原图中的位置（normalized 0-1）
     let status: RecognitionStatus
     let confidence: Double     // 0.0 – 1.0
+    /// True when the source application rendered Black's viewpoint at the
+    /// bottom and the recognized layout was normalized for the engine.
+    let isReversedForDisplay: Bool
+
+    init(
+        boardState: BoardState,
+        boardRect: CGRect,
+        status: RecognitionStatus,
+        confidence: Double,
+        isReversedForDisplay: Bool = false
+    ) {
+        self.boardState = boardState
+        self.boardRect = boardRect
+        self.status = status
+        self.confidence = confidence
+        self.isReversedForDisplay = isReversedForDisplay
+    }
 }
 
 // MARK: - Board Recognizer
@@ -54,6 +71,16 @@ class BoardRecognizer {
     /// The bundled full-board model does not need the legacy per-piece
     /// template calibration step.
     var usesTheOneModel: Bool { theOneRecognizer != nil }
+
+    /// Clear only observations learned from the previous capture source. The
+    /// ONNX models, templates, thresholds, and saved compatible geometry are
+    /// deliberately left untouched.
+    func resetCaptureSourceState() {
+        recentResults.removeAll(keepingCapacity: true)
+        calibratedBoardRect = nil
+        preferredWindowBoardRect = nil
+        captureWindowFrame = nil
+    }
 
     // MARK: Main Entry
 
@@ -110,7 +137,8 @@ class BoardRecognizer {
                 recentResults.removeAll(keepingCapacity: true)
                 recentResults.append(state)
                 return RecognitionResult(boardState: state, boardRect: boardRect,
-                                         status: .stable, confidence: prediction.confidence)
+                                         status: .stable, confidence: prediction.confidence,
+                                         isReversedForDisplay: prediction.wasReversed)
             }
 
             // A fixed crop can become stale after the game window is resized.
@@ -126,7 +154,8 @@ class BoardRecognizer {
                 recentResults.removeAll(keepingCapacity: true)
                 recentResults.append(retry.state)
                 return RecognitionResult(boardState: retry.state, boardRect: poseRect,
-                                         status: .stable, confidence: retry.confidence)
+                                         status: .stable, confidence: retry.confidence,
+                                         isReversedForDisplay: retry.wasReversed)
             }
 
             // The pose model is fast, but XQWizard's surrounding wood frame,
@@ -146,14 +175,16 @@ class BoardRecognizer {
                 recentResults.removeAll(keepingCapacity: true)
                 recentResults.append(retry.state)
                 return RecognitionResult(boardState: retry.state, boardRect: visionRect,
-                                         status: .stable, confidence: retry.confidence)
+                                         status: .stable, confidence: retry.confidence,
+                                         isReversedForDisplay: retry.wasReversed)
             }
 
             // Keep the raw 90-point observation.  The outer tracker can often
             // repair one or two highlighted/misclassified intersections by
             // matching it against legal successors of the trusted position.
             return RecognitionResult(boardState: state, boardRect: boardRect,
-                                     status: .invalid, confidence: prediction.confidence)
+                                     status: .invalid, confidence: prediction.confidence,
+                                     isReversedForDisplay: prediction.wasReversed)
         }
 
         // If a saved window-relative rectangle is stale (window moved or the
@@ -171,7 +202,8 @@ class BoardRecognizer {
                 recentResults.removeAll(keepingCapacity: true)
                 recentResults.append(state)
                 return RecognitionResult(boardState: state, boardRect: poseRect,
-                                         status: .stable, confidence: prediction.confidence)
+                                         status: .stable, confidence: prediction.confidence,
+                                         isReversedForDisplay: prediction.wasReversed)
             }
         }
 

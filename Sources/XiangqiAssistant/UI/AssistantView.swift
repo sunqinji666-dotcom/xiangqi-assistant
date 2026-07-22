@@ -37,9 +37,12 @@ enum AnalysisMode: String, CaseIterable {
 class AssistantViewModel: ObservableObject {
     @Published var bestMove: String = "--"        // UCI move, e.g. "h2e2"
     @Published var bestMoveCN: String = "--"      // Chinese notation, e.g. "炮二平五"
-    @Published var score: Int = 0                 // centipawns
+    @Published var score: Int = 0                 // centipawns, normalized to Red's perspective
+    /// Signed mate distance normalized to Red's perspective.
+    @Published var mateIn: Int? = nil
     @Published var depth: Int = 0
     @Published var pv: [String] = []
+    @Published var searchDetail: String = ""
     @Published var status: AssistantStatus = .idle
     @Published var isRunning: Bool = false
     @Published var errorMessage: String?
@@ -49,12 +52,26 @@ class AssistantViewModel: ObservableObject {
     // Window selection
     @Published var availableWindows: [(id: UInt32, title: String)] = []
     @Published var selectedWindowID: UInt32? = nil
+    @Published var captureSourceUnavailable: Bool = false
     var windowTitle: String {
-        availableWindows.first { $0.id == selectedWindowID }?.title ?? "全屏"
+        if captureSourceUnavailable { return "目标窗口不可用" }
+        return availableWindows.first { $0.id == selectedWindowID }?.title ?? "全屏"
     }
 
     @Published var lastAnalyzedBoard: BoardState? = nil
-    @Published var playerSide: PieceSide = .red
+    /// Mirrors the source application's board orientation for the preview;
+    /// engine coordinates remain canonical regardless of this display choice.
+    @Published var previewIsReversed: Bool = false
+    /// The side controlled by the user. Keep it across app relaunches so a
+    /// Black player is never silently put back into Red mode after an update.
+    @Published var playerSide: PieceSide = AssistantViewModel.savedPlayerSide {
+        didSet {
+            UserDefaults.standard.set(
+                playerSide == .red ? "red" : "black",
+                forKey: Self.playerSideDefaultsKey
+            )
+        }
+    }
     @Published var recommendedSide: PieceSide? = nil
     @Published var analysisMode: AnalysisMode = .ultra
     var playerSideLabel: String { playerSide == .red ? "红方" : "黑方" }
@@ -72,6 +89,13 @@ class AssistantViewModel: ObservableObject {
     /// Temporary on-panel capture diagnostic used when a board cannot be
     /// recognized. It stays inside the app and is never written or sent.
     @Published var diagnosticCapture: NSImage? = nil
+
+    private static let playerSideDefaultsKey = "xiangqiAssistant.playerSide"
+    private static var savedPlayerSide: PieceSide {
+        UserDefaults.standard.string(forKey: playerSideDefaultsKey) == "black"
+            ? .black
+            : .red
+    }
 
     enum AssistantStatus {
         case idle, capturing, analyzing, stable, unstable, error
@@ -98,6 +122,11 @@ class AssistantViewModel: ObservableObject {
     }
 
     var scoreText: String {
+        if let mateIn {
+            if mateIn > 0 { return "红方预计 \(mateIn) 步杀" }
+            if mateIn < 0 { return "黑方预计 \(-mateIn) 步杀" }
+            return score >= 0 ? "红方已形成绝杀" : "黑方已形成绝杀"
+        }
         let abs = Swift.abs(score)
         let side = score > 0 ? "红" : (score < 0 ? "黑" : "")
         if abs == 0 { return "均势" }
@@ -273,6 +302,12 @@ struct AssistantView: View {
                     .foregroundStyle(.tertiary)
                     .monospaced()
 
+                if !vm.searchDetail.isEmpty {
+                    Text(vm.searchDetail)
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(.yellow.opacity(0.8))
+                }
+
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 8)
@@ -411,6 +446,30 @@ struct AssistantView: View {
                 }
                 .menuStyle(.borderlessButton)
                 .frame(maxWidth: .infinity, alignment: .leading)
+
+                Button {
+                    vm.onRefreshWindows?()
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.caption.weight(.semibold))
+                        .frame(width: 24, height: 24)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+                .help("刷新窗口列表")
+
+                Button {
+                    vm.onSelectBoard?()
+                } label: {
+                    Image(systemName: "selection.pin.in.corner")
+                        .font(.caption.weight(.semibold))
+                        .frame(width: 24, height: 24)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(vm.hasBoardGeometry ? .green : .blue)
+                .help(vm.hasBoardGeometry ? "重新框选棋盘" : "手动框选棋盘")
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 6)

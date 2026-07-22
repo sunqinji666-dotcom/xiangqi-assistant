@@ -15,6 +15,10 @@ struct BoardGeometry: Codable {
     /// Display used by the selector. Optional keeps older saved files readable.
     var screenFrame: CGRect?
     var displayID: UInt32?
+    /// For a selected-window capture, persist the board crop relative to that
+    /// window. This remains correct when the window moves between displays or
+    /// is resized. Optional keeps geometry written by older builds readable.
+    var windowNormalizedRect: CGRect?
 
     /// The axis-aligned bounding rect of the board in screen coordinates.
     var screenRect: CGRect {
@@ -38,6 +42,7 @@ struct BoardGeometry: Codable {
     /// `imageSize`  : size of the captured image (may be 2× on Retina).
     /// `windowFrame`: the SCWindow frame in Quartz global screen coords.
     func normalizedBoardRect(imageSize: CGSize, windowFrame: CGRect) -> CGRect {
+        if let windowNormalizedRect { return windowNormalizedRect }
         // Board rect in macOS screen coords
         let br = screenRect
         // SCWindow uses Quartz coordinates (top-left origin), whereas the
@@ -57,6 +62,18 @@ struct BoardGeometry: Codable {
         let relH = br.height / appKitWindow.height
         // SCScreenshot Y-axis: top is y=0 in the image (opposite of macOS screen)
         return CGRect(x: relX, y: 1 - relY - relH, width: relW, height: relH)
+    }
+
+    func storingWindowRelativeRect(windowFrame: CGRect) -> BoardGeometry {
+        var copy = self
+        let normalized = normalizedBoardRect(imageSize: .zero, windowFrame: windowFrame)
+        if normalized.minX >= 0,
+           normalized.minY >= 0,
+           normalized.maxX <= 1,
+           normalized.maxY <= 1 {
+            copy.windowNormalizedRect = normalized
+        }
+        return copy
     }
 
     /// Convert screen coordinates to normalized coordinates for a primary

@@ -6,7 +6,6 @@ import Foundation
 /// checks, captures and active rook/cannon development.
 enum AggressiveMoveSelector {
     private static let maximumEvaluationLoss = 20
-    private static let forcedMateScore = 90_000
 
     /// Short, sound attacking skeletons. A line is only used while the exact
     /// observed history remains its prefix, and only if Pikafish still places
@@ -31,17 +30,25 @@ enum AggressiveMoveSelector {
         guard let best = candidates.first else { return nil }
 
         // A style preference must never lengthen or throw away a forced win.
-        // Pikafish maps positive mate scores close to 100,000; the largest
-        // value is the shortest available mate for the side to move.
-        let forcedWins = candidates.filter { $0.score >= forcedMateScore }
-        if let shortestMate = forcedWins.max(by: { $0.score < $1.score }) {
+        // Preserve the typed mate distance instead of comparing its synthetic
+        // centipawn representation.
+        let forcedWins = candidates.filter { ($0.mateIn ?? 0) > 0 }
+        if let shortestMate = forcedWins.min(by: {
+            ($0.mateIn ?? .max) < ($1.mateIn ?? .max)
+        }) {
             return shortestMate
         }
+
+        // If the engine says the root side is being mated, stylistic bonuses
+        // must not replace a longer defence with a quicker loss. MultiPV order
+        // already ranks the best available resistance first.
+        if best.mateIn != nil { return best }
 
         // MultiPV is ordered by engine preference. Keep only objectively close
         // alternatives; an attacking personality must never turn into blundering.
         let eligible = candidates.enumerated().filter { index, candidate in
-            index == 0 || best.score - candidate.score <= maximumEvaluationLoss
+            index == 0 || (candidate.mateIn == nil &&
+                best.score - candidate.score <= maximumEvaluationLoss)
         }
 
         return eligible.max { lhs, rhs in

@@ -41,7 +41,9 @@ final class TheOneLayoutRecognizer {
         }
     }
 
-    func recognize(boardImage: CGImage) -> (state: BoardState, confidence: Double)? {
+    func recognize(
+        boardImage: CGImage
+    ) -> (state: BoardState, confidence: Double, wasReversed: Bool)? {
         guard let data = makeInput(from: boardImage) else { return nil }
 
         do {
@@ -84,7 +86,12 @@ final class TheOneLayoutRecognizer {
             // The session tracker has the last trusted position and can score
             // this raw observation against legal one/two-ply successors.  It
             // is therefore the only layer allowed to repair a moving game.
-            return (state, totalConfidence / 90.0)
+            let canonical = state.canonicalOrientation()
+            return (
+                canonical.state,
+                totalConfidence / 90.0,
+                canonical.wasReversed
+            )
         } catch {
             return nil
         }
