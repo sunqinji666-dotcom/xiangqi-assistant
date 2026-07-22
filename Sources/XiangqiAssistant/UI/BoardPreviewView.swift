@@ -12,53 +12,85 @@ struct BoardPreviewView: View {
     private let boardHeight: CGFloat = 300
 
     var body: some View {
-        VStack(spacing: 8) {
-            HStack {
-                Image(systemName: "checkerboard.rectangle")
+        ZStack {
+            VStack(spacing: 8) {
+                HStack(spacing: 5) {
+                    Image(systemName: "checkerboard.rectangle")
+                        .foregroundStyle(.orange)
+                    Text("预览")
+                        .font(.caption.weight(.semibold))
+                    Spacer()
+                    if vm.lastAnalyzedBoard != nil {
+                        Text("已识别")
+                            .font(.caption2)
+                            .foregroundStyle(.green)
+                    }
+                    if let side = vm.recommendedSide {
+                        Text(side == .red ? "红方走" : "黑方走")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(side == .red ? .red : .primary)
+                    }
+                    Button {
+                        vm.onForceAnalyzePreview?()
+                    } label: {
+                        Text("强制")
+                            .font(.caption2.weight(.bold))
+                            .fixedSize()
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.yellow)
+                    .disabled(vm.lastAnalyzedBoard == nil)
+                    .help("立即以当前预览局面计算，不等待新截图或稳定帧")
+
+                    Button {
+                        vm.onStartAIReview?()
+                    } label: {
+                        Text("复核")
+                            .font(.caption2.weight(.semibold))
+                            .fixedSize()
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.green)
+                    .disabled(vm.aiReviewPhase.isBusy)
+                    .help("冻结当前棋盘并手动发送给千问视觉模型复核")
+
+                    Button {
+                        vm.onFlipBoard?()
+                    } label: {
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                            .font(.caption2.weight(.semibold))
+                    }
+                    .buttonStyle(.plain)
                     .foregroundStyle(.orange)
-                Text("局面预览")
-                    .font(.caption.weight(.semibold))
-                Spacer()
-                if vm.lastAnalyzedBoard != nil {
-                    Text("已识别")
-                        .font(.caption2)
-                        .foregroundStyle(.green)
+                    .accessibilityLabel("翻转")
+                    .help("旋转局面预览和走法箭头，并在本轮分析中锁定方向")
                 }
-                if let side = vm.recommendedSide {
-                    Text(side == .red ? "红方走" : "黑方走")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(side == .red ? .red : .primary)
+
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color(red: 0.72, green: 0.48, blue: 0.25).opacity(0.95))
+
+                    if let capture = vm.diagnosticCapture, vm.lastAnalyzedBoard == nil {
+                        Image(nsImage: capture)
+                            .resizable()
+                            .scaledToFit()
+                            .padding(6)
+                    } else {
+                        boardDrawing
+                            .padding(12)
+                    }
                 }
-                Button {
-                    vm.onFlipBoard?()
-                } label: {
-                    Label("翻转", systemImage: "arrow.triangle.2.circlepath")
-                        .font(.caption2.weight(.semibold))
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.orange)
-                .help("旋转局面预览和走法箭头，并在本轮分析中锁定方向")
+                .frame(width: boardWidth, height: boardHeight)
+                .overlay(RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color.white.opacity(0.18), lineWidth: 1))
+
+                boardEditorPalette
             }
 
-            ZStack {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color(red: 0.72, green: 0.48, blue: 0.25).opacity(0.95))
-
-                if let capture = vm.diagnosticCapture, vm.lastAnalyzedBoard == nil {
-                    Image(nsImage: capture)
-                        .resizable()
-                        .scaledToFit()
-                        .padding(6)
-                } else {
-                    boardDrawing
-                        .padding(12)
-                }
+            if vm.aiReviewPhase != .idle {
+                AIReviewOverlayView(vm: vm)
+                    .transition(.opacity.combined(with: .scale(scale: 0.98)))
             }
-            .frame(width: boardWidth, height: boardHeight)
-            .overlay(RoundedRectangle(cornerRadius: 10)
-                .stroke(Color.white.opacity(0.18), lineWidth: 1))
-
-            boardEditorPalette
         }
         .padding(12)
         .frame(width: cardWidth, height: 456)
@@ -75,6 +107,19 @@ struct BoardPreviewView: View {
             let dy = h / 9
             let state = vm.lastAnalyzedBoard
             let move = UCIMove(uci: vm.bestMove)
+            // Never leave a purple arrow on a board that has already moved,
+            // changed side-to-move, or no longer admits that exact move.  The
+            // text strip can be cleared a rendering pass later than the board;
+            // this local gate prevents a stale suggestion from looking like a
+            // coordinate-mapping bug.
+            let qwenMove = UCIMove(uci: vm.qwenAdviceMoveUCI).flatMap { candidate -> UCIMove? in
+                guard vm.qwenAdvicePhase == .ready,
+                      vm.qwenAdviceSide == vm.currentTurnSide,
+                      let state,
+                      state.isLegalMove(candidate, for: vm.currentTurnSide)
+                else { return nil }
+                return candidate
+            }
             let reversed = vm.previewIsReversed
 
             ZStack {
@@ -115,6 +160,29 @@ struct BoardPreviewView: View {
                 .padding(.horizontal, dx * 0.75)
                 .frame(width: w)
                 .position(x: w / 2, y: dy * 4.5)
+
+                if let qwenMove, vm.qwenAdvicePhase == .ready {
+                    moveArrow(from: point(for: qwenMove.from, dx: dx, dy: dy,
+                                          reversed: reversed),
+                              to: point(for: qwenMove.to, dx: dx, dy: dy,
+                                        reversed: reversed))
+                        .stroke(.purple, style: StrokeStyle(
+                            lineWidth: 5,
+                            lineCap: .round,
+                            lineJoin: .round,
+                            dash: [8, 5]
+                        ))
+                    Circle()
+                        .stroke(.purple, style: StrokeStyle(lineWidth: 3, dash: [4, 3]))
+                        .frame(width: max(28, dx + 2), height: max(28, dy + 2))
+                        .position(point(for: qwenMove.from, dx: dx, dy: dy,
+                                        reversed: reversed))
+                    Circle()
+                        .stroke(.purple, lineWidth: 3)
+                        .frame(width: max(24, dx - 2), height: max(24, dy - 2))
+                        .position(point(for: qwenMove.to, dx: dx, dy: dy,
+                                        reversed: reversed))
+                }
 
                 if let move {
                     moveArrow(from: point(for: move.from, dx: dx, dy: dy,
@@ -176,6 +244,30 @@ struct BoardPreviewView: View {
                         .position(x: w / 2, y: h / 2)
                 }
 
+                // Explicit endpoint labels make the direction unambiguous.
+                // They use the same single display transform as the pieces,
+                // so a reversed preview cannot rotate the arrow twice.
+                if let qwenMove, vm.qwenAdvicePhase == .ready {
+                    endpointBadge("起", color: .purple)
+                        .position(badgePoint(
+                            for: qwenMove.from,
+                            dx: dx,
+                            dy: dy,
+                            reversed: reversed,
+                            boardWidth: w,
+                            boardHeight: h
+                        ))
+                    endpointBadge("到", color: .purple)
+                        .position(badgePoint(
+                            for: qwenMove.to,
+                            dx: dx,
+                            dy: dy,
+                            reversed: reversed,
+                            boardWidth: w,
+                            boardHeight: h
+                        ))
+                }
+
                 // Keep the interaction layer above the rendered pieces so
                 // right-click works on occupied and empty intersections alike.
                 if state != nil {
@@ -220,14 +312,15 @@ struct BoardPreviewView: View {
                 )
                 Button {
                     activeCorrection = nil
+                    vm.onForceAnalyzePreview?()
                 } label: {
-                    Label("完成", systemImage: "checkmark.circle")
+                    Label("完成并分析", systemImage: "bolt.circle.fill")
                         .foregroundStyle(
                             activeCorrection == nil ? Color.secondary : Color.green
                         )
                 }
                 .buttonStyle(.plain)
-                .help("退出摆棋或擦棋模式")
+                .help("退出人工编辑，并强制以当前预览局面立即分析")
             }
             .font(.caption2)
             .frame(height: 18)
@@ -361,5 +454,31 @@ struct BoardPreviewView: View {
         path.move(to: to)
         path.addLine(to: CGPoint(x: to.x - head * cos(angle + .pi / 6), y: to.y - head * sin(angle + .pi / 6)))
         return path
+    }
+
+    private func endpointBadge(_ title: String, color: Color) -> some View {
+        Text(title)
+            .font(.system(size: 9, weight: .black))
+            .foregroundStyle(.white)
+            .frame(width: 16, height: 16)
+            .background(color, in: Circle())
+            .overlay(Circle().stroke(.white.opacity(0.9), lineWidth: 1))
+    }
+
+    private func badgePoint(
+        for position: BoardPosition,
+        dx: CGFloat,
+        dy: CGFloat,
+        reversed: Bool,
+        boardWidth: CGFloat,
+        boardHeight: CGFloat
+    ) -> CGPoint {
+        let base = point(for: position, dx: dx, dy: dy, reversed: reversed)
+        let xOffset: CGFloat = base.x > boardWidth - 18 ? -12 : 12
+        let yOffset: CGFloat = base.y < 18 ? 12 : -12
+        return CGPoint(
+            x: min(max(8, base.x + xOffset), boardWidth - 8),
+            y: min(max(8, base.y + yOffset), boardHeight - 8)
+        )
     }
 }

@@ -163,6 +163,16 @@ actor PikafishEngine {
     private var lineMailbox: EngineLineMailbox?
     private var isReady = false
     private var stopRequestedExternally = false
+    private let configuredThreads: Int
+    private let configuredHashMegabytes: Int
+
+    init(
+        threads: Int = StrengthProfile.engineThreads,
+        hashMegabytes: Int = StrengthProfile.hashMegabytes
+    ) {
+        configuredThreads = max(1, threads)
+        configuredHashMegabytes = max(32, hashMegabytes)
+    }
 
     // MARK: Lifecycle
 
@@ -221,8 +231,8 @@ actor PikafishEngine {
             send("uci")
             try await waitFor(token: "uciok", timeout: 5)
             send("setoption name EvalFile value \(nnueURL.path)")
-            send("setoption name Threads value \(StrengthProfile.engineThreads)")
-            send("setoption name Hash value \(StrengthProfile.hashMegabytes)")
+            send("setoption name Threads value \(configuredThreads)")
+            send("setoption name Hash value \(configuredHashMegabytes)")
             send("isready")
             try await waitFor(token: "readyok", timeout: 5)
             isReady = true

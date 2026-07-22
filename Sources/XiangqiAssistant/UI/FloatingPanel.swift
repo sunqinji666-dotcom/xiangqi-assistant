@@ -9,7 +9,7 @@ class FloatingPanel: NSPanel {
     private static let interfaceScale: CGFloat = 1.2
     private static let panelSize = NSSize(
         width: 626 * interfaceScale,
-        height: 472 * interfaceScale
+        height: 566 * interfaceScale
     )
 
     init(contentView: some View) {

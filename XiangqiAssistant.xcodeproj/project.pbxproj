@@ -14,6 +14,7 @@
 		31DBCAEE9EF4AB6D35D82A86 /* BoardState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A3D0C10C5CDF739BF1D8E6 /* BoardState.swift */; };
 		3B3464F07C918055F09C71E2 /* StrengthProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = E568F517D064346A8C0B0B73 /* StrengthProfile.swift */; };
 		47F4E3F2197A13AD4B891D45 /* OpeningBook.swift in Sources */ = {isa = PBXBuildFile; fileRef = E533A8273A7CAA64302BE273 /* OpeningBook.swift */; };
+		4F928A22A188A6F7042392FE /* AIReviewOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8D1740EF1926B3A5AAAA5BB /* AIReviewOverlayView.swift */; };
 		5855C8CDBDE94AD5907D51F3 /* TheOnePoseRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7B7057A85B6149107D92779 /* TheOnePoseRecognizer.swift */; };
 		69CAF5FB2424D6A6FC4070A7 /* CalibrationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69C1F182A961875C9B74C98A /* CalibrationManager.swift */; };
 		6D1CF2A74792DED5BDA9F71F /* BoardGeometrySourceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B942327B020DDD5EE44F96DB /* BoardGeometrySourceStore.swift */; };
@@ -25,6 +26,7 @@
 		BC1085A1C65A1610066D5DC5 /* AssistantView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFE77AA49DD6185868A45478 /* AssistantView.swift */; };
 		BCCE2CA50DA3ABB7C038DE51 /* AdaptiveSearchPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38AAEF7A490970AAF95CFF0B /* AdaptiveSearchPolicy.swift */; };
 		C5924C9B2A3B19F3C765460A /* TemplateLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 356EF78930D7492FD88C7B9A /* TemplateLibrary.swift */; };
+		C6A02DE0AE09CFA0FE30C9F0 /* QwenBoardReviewService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE2FBF0B76FFC38B820044DD /* QwenBoardReviewService.swift */; };
 		CD4305F3D8AAFD37368EB684 /* WindowCandidatePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17AB44128A114418B03712FC /* WindowCandidatePolicy.swift */; };
 		E96A9D98A1EE4626CF83029A /* BoardSelectorOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FC4786089340EF39A37AEA9 /* BoardSelectorOverlay.swift */; };
 		ED38C15FE05018FF3CE171EA /* EngineSearchCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B70FAE33CFDAA7428000777A /* EngineSearchCoordinator.swift */; };
@@ -55,9 +57,11 @@
 		B70FAE33CFDAA7428000777A /* EngineSearchCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineSearchCoordinator.swift; sourceTree = "<group>"; };
 		B942327B020DDD5EE44F96DB /* BoardGeometrySourceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardGeometrySourceStore.swift; sourceTree = "<group>"; };
 		C7B7057A85B6149107D92779 /* TheOnePoseRecognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TheOnePoseRecognizer.swift; sourceTree = "<group>"; };
+		DE2FBF0B76FFC38B820044DD /* QwenBoardReviewService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QwenBoardReviewService.swift; sourceTree = "<group>"; };
 		E533A8273A7CAA64302BE273 /* OpeningBook.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpeningBook.swift; sourceTree = "<group>"; };
 		E568F517D064346A8C0B0B73 /* StrengthProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrengthProfile.swift; sourceTree = "<group>"; };
 		EFE77AA49DD6185868A45478 /* AssistantView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantView.swift; sourceTree = "<group>"; };
+		F8D1740EF1926B3A5AAAA5BB /* AIReviewOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIReviewOverlayView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -78,6 +82,7 @@
 				8770D1866AC192562DCF6D3A /* BoardRecognizer.swift */,
 				33A3D0C10C5CDF739BF1D8E6 /* BoardState.swift */,
 				69C1F182A961875C9B74C98A /* CalibrationManager.swift */,
+				DE2FBF0B76FFC38B820044DD /* QwenBoardReviewService.swift */,
 				356EF78930D7492FD88C7B9A /* TemplateLibrary.swift */,
 				473770CE6B1F93AC9A186D52 /* TheOneLayoutRecognizer.swift */,
 				C7B7057A85B6149107D92779 /* TheOnePoseRecognizer.swift */,
@@ -96,6 +101,7 @@
 		93620AD5CCECDD363933FAD3 /* UI */ = {
 			isa = PBXGroup;
 			children = (
+				F8D1740EF1926B3A5AAAA5BB /* AIReviewOverlayView.swift */,
 				EFE77AA49DD6185868A45478 /* AssistantView.swift */,
 				957829BC25F2096085727B38 /* BoardPreviewView.swift */,
 				A09A74A6A2B111CE8EF98648 /* FloatingPanel.swift */,
@@ -292,6 +298,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4F928A22A188A6F7042392FE /* AIReviewOverlayView.swift in Sources */,
 				BCCE2CA50DA3ABB7C038DE51 /* AdaptiveSearchPolicy.swift in Sources */,
 				FCDEDB2A14849D1229EEAA79 /* AggressiveMoveSelector.swift in Sources */,
 				BC1085A1C65A1610066D5DC5 /* AssistantView.swift in Sources */,
@@ -307,6 +314,7 @@
 				16E5DE01460C82D4C2C5B4A5 /* FloatingPanel.swift in Sources */,
 				47F4E3F2197A13AD4B891D45 /* OpeningBook.swift in Sources */,
 				0F4D42AE43126979845556BD /* PikafishEngine.swift in Sources */,
+				C6A02DE0AE09CFA0FE30C9F0 /* QwenBoardReviewService.swift in Sources */,
 				98FA0F78CF7C1916C627E24C /* ScreenCaptureManager.swift in Sources */,
 				3B3464F07C918055F09C71E2 /* StrengthProfile.swift in Sources */,
 				C5924C9B2A3B19F3C765460A /* TemplateLibrary.swift in Sources */,
@@ -371,9 +379,10 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_ENTITLEMENTS = XiangqiAssistant.entitlements;
 				CODE_SIGN_IDENTITY = "Xiangqi Pilot Dedicated Signing";
+				CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO;
 				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -388,7 +397,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_FILE = Info.plist;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.2.0;
+				MARKETING_VERSION = 1.3.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.xiangqi.XiangqiAssistant.TheOne;
@@ -450,9 +459,10 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_ENTITLEMENTS = XiangqiAssistant.entitlements;
 				CODE_SIGN_IDENTITY = "Xiangqi Pilot Dedicated Signing";
+				CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO;
 				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -473,7 +483,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_FILE = Info.plist;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.2.0;
+				MARKETING_VERSION = 1.3.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;

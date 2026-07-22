@@ -10,13 +10,13 @@ A quiet macOS menu-bar companion for Chinese-chess study: select a board window,
 
 [简体中文](../README.md) · **English** · [日本語](README.ja.md)
 
-[Download v1.2.0](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest) · [One-minute setup](#one-minute-setup) · [How it works](#from-one-frame-to-one-recommendation) · [Star the project](https://github.com/sunqinji666-dotcom/xiangqi-assistant)
+[Download v1.3.0](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest) · [One-minute setup](#one-minute-setup) · [How it works](#from-one-frame-to-one-recommendation) · [Star the project](https://github.com/sunqinji666-dotcom/xiangqi-assistant)
 
 </div>
 
 | Stable release | Platform | Runtime model | License | Last verified |
 |---|---|---|---|---|
-| v1.2.0 · Build 3 | macOS 14+ · Apple Silicon | Menu bar · Local-first | MIT; third-party exceptions | 2026-07-23 |
+| v1.3.0 · Build 4 | macOS 14+ · Apple Silicon | Menu bar · Local-first | MIT; third-party exceptions | 2026-07-22 |
 
 ## A chess game needs clarity, not more noise
 
@@ -25,6 +25,17 @@ Critical positions change in a moment. Manually rebuilding every piece in an ana
 XiangqiAssistant turns that gap into a visible local pipeline. You explicitly choose a chess window. The app captures that window, finds the board, reconstructs a trusted FEN position, and hands it to a local Pikafish process. Ultra mode publishes an initial result around the 2-second milestone, deepens an unchanged normal position to about 6 seconds, and may continue to about 15 seconds when the best move churns, the score swings, or a mating line appears.
 
 It is not an automatic player. It behaves more like a quiet analyst beside the board: direction first, stronger evidence next.
+
+## v1.3.0: independent ideas, locally verified
+
+v1.3.0 adds a purple independent-advice lane. Qwen sees the position and an unranked legal-move list, but not Pikafish scores or the green recommendation. A separate low-resource Pikafish instance verifies the proposal locally before it is shown.
+
+- **Up to three independent plans:** attacking, practical trap, and steady styles with rationale, plan, and confidence.
+- **Local post-verification:** proposals are legal-checked and tactically audited by Pikafish; one independent retry is allowed if all proposals fail.
+- **Green and purple together:** the panel shows proposal order, agreement with green, and the locally recomputed score delta.
+- **Stale-arrow protection:** a purple move disappears when the board or side to move changes.
+- **Correction rebasing:** a manually corrected piece can follow a unique one- or two-ply transition instead of remaining pinned to an old coordinate.
+- **Public-build credential boundary:** review credentials live in the app sandbox's Application Support directory; no machine-specific absolute path is published.
 
 ## v1.2.0: recognition that can follow a whole game
 
@@ -61,14 +72,14 @@ The bundled opening book is offline, read-only, legality-checked, and carries pr
 
 ## One-minute setup
 
-1. Download `XiangqiAssistant-v1.2.0-macOS-arm64.zip` from [Releases](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest).
+1. Download `XiangqiAssistant-v1.3.0-macOS-arm64.zip` from [Releases](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest).
 2. Unzip it and move `象棋助手-TheOne.app` to Applications.
 3. If macOS blocks the first launch, right-click the app in Finder and choose **Open**.
 4. In **System Settings → Privacy & Security → Screen Recording**, allow the app to read the selected window.
 5. Open a standard Xiangqi board, click the menu-bar icon, refresh the window list, and select the target.
 6. Confirm the board region. Use manual selection if automatic localization is not reliable for that board skin.
 
-> The current package uses a persistent local signing identity and is not notarized with an Apple Developer ID. macOS may require manual confirmation on first launch.
+> The current package uses a persistent local signing identity and is not notarized with an Apple Developer ID. macOS may require manual confirmation on first launch. To use Qwen review/advice, place your own API key in `Application Support/象棋助手/ModelCredentials/qwen-dashscope`; no credential is included in the repository or package.
 
 ## From one frame to one recommendation
 

@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.3.0 — 2026-07-22
+
+- Added independent Qwen advice: Qwen proposes up to three styles before a
+  separate low-resource Pikafish instance verifies legality and tactical safety.
+- Added one independent retry when every proposal fails local verification;
+  engine scores and the green recommendation are never sent to Qwen first.
+- Added purple proposal presentation with style, confidence, rationale, plan,
+  candidate order, and a guarded comparison against the green move.
+- Added stale-arrow protection so a purple move disappears when the board or
+  side to move changes.
+- Added manual-correction rebasing through unique one- or two-ply transitions,
+  so a corrected piece can move or be captured without staying pinned to its
+  original coordinate.
+- Added configurable Pikafish threads and hash size for the secondary verifier.
+- Added manual visual board review with a sandbox credential location and no
+  machine-specific absolute credential path in the public build.
+
 ## v1.2.0 — 2026-07-23
 
 - Added durable per-application board geometry, with a legacy recovery copy and

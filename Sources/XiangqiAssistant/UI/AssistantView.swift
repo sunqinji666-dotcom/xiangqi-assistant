@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import AppKit
 
 enum AnalysisMode: String, CaseIterable {
     case normal
@@ -37,6 +38,26 @@ enum BoardSquareCorrection: Equatable {
     case piece(Piece)
 }
 
+enum AIReviewPhase: Equatable {
+    case idle
+    case captured
+    case sending
+    case reviewing
+    case ready
+    case failed
+
+    var isBusy: Bool {
+        self == .captured || self == .sending || self == .reviewing
+    }
+}
+
+enum QwenAdvicePhase: Equatable {
+    case idle
+    case loading
+    case ready
+    case failed
+}
+
 // MARK: - View Model
 
 @MainActor
@@ -68,6 +89,28 @@ class AssistantViewModel: ObservableObject {
     /// Mirrors the source application's board orientation for the preview;
     /// engine coordinates remain canonical regardless of this display choice.
     @Published var previewIsReversed: Bool = false
+    @Published var aiReviewPhase: AIReviewPhase = .idle
+    @Published var aiReviewSnapshot: NSImage? = nil
+    @Published var aiReviewBoard: BoardState? = nil
+    @Published var aiReviewDifferences: Set<BoardPosition> = []
+    @Published var aiReviewConfidence: Double? = nil
+    @Published var aiReviewModelName: String = "qwen3.7-plus"
+    @Published var aiReviewMessage: String = ""
+    @Published var qwenAdvicePhase: QwenAdvicePhase = .idle
+    @Published var qwenAdviceMoveUCI: String = ""
+    @Published var qwenAdviceMoveCN: String = ""
+    @Published var qwenAdviceReason: String = ""
+    @Published var qwenAdvicePlan: String = ""
+    @Published var qwenAdviceStyle: String = ""
+    /// The turn for which Qwen made this proposal.  BoardPreview uses it as
+    /// an extra stale-arrow guard even during a rapid recognition update.
+    @Published var qwenAdviceSide: PieceSide? = nil
+    @Published var qwenAdviceConfidence: Double? = nil
+    @Published var qwenAdviceMessage: String = ""
+    @Published var qwenAdviceCandidateRank: Int? = nil
+    @Published var qwenAdviceCandidateCount: Int? = nil
+    @Published var qwenAdviceScoreGapCentipawns: Int? = nil
+    @Published var qwenAdviceAgreesWithGreen: Bool? = nil
     /// The side controlled by the user. Keep it across app relaunches so a
     /// Black player is never silently put back into Red mode after an update.
     @Published var playerSide: PieceSide = AssistantViewModel.savedPlayerSide {
@@ -114,6 +157,11 @@ class AssistantViewModel: ObservableObject {
     var onResyncPosition: (() -> Void)?
     var onCorrectBoardSquare: ((BoardPosition, BoardSquareCorrection) -> Void)?
     var onFlipBoard: (() -> Void)?
+    var onStartAIReview: (() -> Void)?
+    var onApplyAIReview: (() -> Void)?
+    var onDismissAIReview: (() -> Void)?
+    var onForceAnalyzePreview: (() -> Void)?
+    var onRequestQwenAdvice: (() -> Void)?
     @Published var hasBoardGeometry: Bool = false
     @Published var needsPositionResync: Bool = false
     /// Temporary on-panel capture diagnostic used when a board cannot be
@@ -190,9 +238,12 @@ struct AssistantView: View {
     @ObservedObject var vm: AssistantViewModel
 
     var body: some View {
-        HStack(spacing: 10) {
-            assistantCard
-            BoardPreviewView(vm: vm)
+        VStack(spacing: 8) {
+            HStack(spacing: 10) {
+                assistantCard
+                BoardPreviewView(vm: vm)
+            }
+            qwenAdviceStrip
         }
         .padding(8)
         .colorScheme(.dark)
@@ -585,6 +636,128 @@ struct AssistantView: View {
         }
     }
 
+    // MARK: Qwen second opinion
+
+    private var qwenAdviceStrip: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle().fill(Color.purple.opacity(0.22))
+                Image(systemName: "sparkles")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(.purple)
+            }
+            .frame(width: 38, height: 38)
+
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 7) {
+                    Text("千问独立建议")
+                        .font(.caption.weight(.semibold))
+                    Text("千问先提案 · 本地后验棋")
+                        .font(.caption2)
+                        .foregroundStyle(.purple)
+                    if let confidence = vm.qwenAdviceConfidence,
+                       vm.qwenAdvicePhase == .ready {
+                        Text("\(Int((confidence * 100).rounded()))%")
+                            .font(.caption2.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                switch vm.qwenAdvicePhase {
+                case .idle:
+                    Text("千问先独立提出三套可走方案，本地只在事后验棋")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                case .loading:
+                    HStack(spacing: 6) {
+                        ProgressView().controlSize(.small)
+                        Text("千问正在分析当前局面…")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                case .ready:
+                    HStack(spacing: 8) {
+                        Text(vm.qwenAdviceMoveCN)
+                            .font(.headline.weight(.bold))
+                            .foregroundStyle(.purple)
+                        Text(vm.qwenAdviceMoveUCI)
+                            .font(.caption2.monospaced())
+                            .foregroundStyle(.tertiary)
+                        if let move = UCIMove(uci: vm.qwenAdviceMoveUCI) {
+                            Text("起 \(move.uci.prefix(2)) → 到 \(move.uci.suffix(2))")
+                                .font(.caption2.monospaced().weight(.semibold))
+                                .foregroundStyle(.purple.opacity(0.85))
+                        }
+                        if !vm.qwenAdviceStyle.isEmpty {
+                            Text(vm.qwenAdviceStyle)
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(.purple)
+                        }
+                        Text(vm.qwenAdviceReason)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                    HStack(spacing: 7) {
+                        if let rank = vm.qwenAdviceCandidateRank {
+                            let total = vm.qwenAdviceCandidateCount ?? rank
+                            Text("千问方案 #\(rank)/\(total)")
+                        }
+                        if vm.qwenAdviceAgreesWithGreen == true {
+                            Text("与绿色一致")
+                                .foregroundStyle(.green)
+                        } else if vm.qwenAdviceAgreesWithGreen == false {
+                            Text("紫色独立备选")
+                                .foregroundStyle(.purple)
+                        }
+                        if let gap = vm.qwenAdviceScoreGapCentipawns {
+                            Text(scoreDeltaText(gap))
+                        }
+                        if !vm.qwenAdviceMessage.isEmpty {
+                            Text(vm.qwenAdviceMessage)
+                                .foregroundStyle(.purple.opacity(0.82))
+                                .lineLimit(1)
+                        }
+                        Text(vm.qwenAdvicePlan)
+                            .lineLimit(1)
+                    }
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                case .failed:
+                    Text(vm.qwenAdviceMessage)
+                        .font(.caption2)
+                        .foregroundStyle(.orange)
+                        .lineLimit(2)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Button {
+                vm.onRequestQwenAdvice?()
+            } label: {
+                Label(
+                    vm.qwenAdvicePhase == .ready ? "重新分析" : "问千问",
+                    systemImage: "paperplane.fill"
+                )
+                .font(.caption.weight(.semibold))
+                .padding(.horizontal, 11)
+                .padding(.vertical, 7)
+                .background(Color.purple.opacity(0.20), in: Capsule())
+                .overlay(Capsule().stroke(Color.purple.opacity(0.45), lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.purple)
+            .disabled(vm.qwenAdvicePhase == .loading || vm.lastAnalyzedBoard == nil)
+        }
+        .padding(.horizontal, 14)
+        .frame(width: 610, height: 86)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color.purple.opacity(0.28), lineWidth: 1)
+        )
+    }
+
     // MARK: Helpers
 
     private var scoreBarGradient: LinearGradient {
@@ -592,6 +765,12 @@ struct AssistantView: View {
             colors: [.red.opacity(0.8), .orange.opacity(0.6)],
             startPoint: .leading, endPoint: .trailing
         )
+    }
+
+    private func scoreDeltaText(_ centipawns: Int) -> String {
+        if centipawns == 0 { return "复算并列" }
+        let magnitude = String(format: "%.2f兵", Double(abs(centipawns)) / 100.0)
+        return centipawns > 0 ? "复算优于绿 +\(magnitude)" : "较绿 -\(magnitude)"
     }
 }
 
