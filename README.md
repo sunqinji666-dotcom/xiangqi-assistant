@@ -1,163 +1,60 @@
 # 象棋助手 · XiangqiAssistant
 
-![象棋助手主视觉：本地识别棋盘并由引擎深化候选着法的概念示意](docs/assets/xiangqi-assistant-hero-v2.png)
+![象棋助手：macOS 本地棋局识别与分析工具](docs/assets/product/banner.png)
 
 <div align="center">
 
-### 先看见局面，再读懂那一步。
+### 看清局势，也看见下一步。
 
-一款安静常驻于 macOS 菜单栏的中国象棋研究工具：选择棋盘窗口，识别当前局面，在本机快速给出候选着法，并继续深化验证。
+macOS 菜单栏里的中国象棋分析工具：选择棋盘窗口，识别局面，由本机 Pikafish 给出着法；可选的千问建议会再经过本地验证。
 
 **简体中文** · [English](docs/README.en.md) · [日本語](docs/README.ja.md)
 
-[下载 v1.3.1](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest) · [一分钟上手](#一分钟上手) · [查看工作原理](#从一帧画面到一手建议) · [Star / 收藏](https://github.com/sunqinji666-dotcom/xiangqi-assistant)
+[下载 v1.3.1](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest) · [快速开始](#快速开始) · [Star / 收藏](https://github.com/sunqinji666-dotcom/xiangqi-assistant)
 
 </div>
 
-| 当前稳定版 | 支持平台 | 运行方式 | 许可证 | 最后验证 |
-|---|---|---|---|---|
-| v1.3.1 · Build 5 | macOS 14+ · Apple Silicon | 菜单栏 · 本地运行 | MIT；第三方组件除外 | 2026-07-22 |
+| 当前版本 | 支持平台 | 许可证 |
+|---|---|---|
+| v1.3.1 · Build 5 | macOS 14+ · Apple Silicon | MIT（第三方组件除外） |
 
-## 一盘棋真正需要的，不是更多噪音
+## 它做什么
 
-棋局改变往往只在一瞬间。你看到局面，却未必来得及把每个棋子抄进分析器；传统引擎又常常要求手工摆盘、切换窗口、等待搜索完成。
+![完整的三栏工作界面：着法分析、棋盘预览和独立建议](docs/assets/product/overview.png)
 
-象棋助手把这段过程压缩成一个清楚的闭环：你明确选择一个棋盘窗口，它读取画面、确认棋盘、还原局面，再把可信的 FEN 交给本机 Pikafish。约 2 秒时先展示一份可用建议；局面没有变化时，后台继续搜索到约 6 秒；遇到着法反复、分数波动或杀棋线时，最多深化到约 15 秒。
+- 读取你**明确选择**的棋盘窗口，自动识别棋盘和局面。
+- 本机 Pikafish 分析候选着法、分数、深度与主要变化。
+- 支持普通、主动、超强三种分析节奏；局面不变时会继续深化。
+- 可手动框选、修正棋子、翻转棋盘，并为不同棋类客户端记住校准区域。
+- 可选千问独立建议：先提出方案，再由另一条本地 Pikafish 流程检查合法性和明显战术风险。
 
-它不是替你下棋的人。它更像坐在棋盘旁边的一位安静研究员：先给方向，再把证据补完整。
+## 两条思路，同时摆在棋盘上
 
-## v1.3.0：让两种思路彼此独立，再由本地验证收口
+| 本机引擎分析 | 千问独立建议 |
+|---|---|
+| ![本机引擎的着法、评分与变化展示](docs/assets/product/analysis.png) | ![千问建议经过本地验证后显示在棋盘下方](docs/assets/product/qwen-review.png) |
+| 用 Pikafish 给出主线和评分。 | 不预先读取绿色引擎推荐；最多给出三套思路，再本地复核。 |
 
-v1.3.0 增加了紫色的千问独立建议：千问先只看局面和合法着法，不看 Pikafish 的评分或绿色推荐；随后由第二个低资源 Pikafish 实例在本机检查合法性与明显战术风险。
+![棋盘预览支持识别状态、走法箭头和手动修正](docs/assets/product/board.png)
 
-- **最多三套独立方案**：主攻、诡招/实战陷阱、稳健方案，显示风格、理由、计划与置信度。
-- **本地后验棋**：紫色方案先由千问提出，再由本机 Pikafish 验证；全部失败时独立重试一次。
-- **绿色与紫色同时可见**：展示候选顺序、是否与绿色一致，以及复算后的相对差距。
-- **旧箭头自动失效**：棋盘或行棋方变化后，旧的紫色走法不会残留在新局面上。
-- **人工修正会跟着棋局走**：程序能识别唯一的一到两步真实变化，让人工修正随棋子移动或被吃。
-- **公开源码不绑定个人路径**：复核凭证放在应用沙盒的 Application Support 中。
-
-## v1.2.0：让识别真正跟得上一整盘棋
-
-v1.2.0 的重点不是再增加一个模型，而是让“框选、识别、纠正、继续分析”成为可靠的长期状态。
-
-- **每个程序各自记住棋盘**：不同象棋客户端拥有独立的窗口相对框选区域，不再互相覆盖。
-- **多屏幕确认式框选**：所有显示器都能接收框选，拖完后必须点击“确认保存”，避免误触立即写入。
-- **五帧逐格投票**：90 个交叉点分别投票，单个高亮、动画或闪烁棋子不会拖住整盘识别。
-- **方向锁定与手动翻转**：一次确认后，本局不会因为瞬时噪声突然旋转；仍可由用户主动翻转。
-- **人可以纠正机器**：支持按格修正棋子或恢复自动识别，也能手动同步红黑行棋方。
-- **重新同步而不重置一切**：可只清除棋局跟踪状态，保留窗口、权限、框选、模型和当前预览。
-- **按来源恢复可信棋盘**：重新打开或窗口重建时先恢复上次局面，截图在后台继续更新；暂停后再开始仍会强制执行全新扫描。
-- **识别与引擎解耦**：Pikafish 变慢或恢复时，已经确认的棋盘仍保持稳定状态。
-
-## v1.1.0：更快回答，也更谨慎地下结论
-
-### 先有答案，再继续思考
-
-- **快速里程碑**：Ultra 模式约 2 秒发布第一份结果，不必等完整深搜结束。
-- **自适应深化**：普通局面继续到约 6 秒；复杂局面最多约 15 秒。
-- **结果防串线**：棋盘一旦变化，旧局面的搜索结果不能覆盖新局面。
-- **稳定推荐**：分数接近时减少候选着法来回跳动；明显更优或更短杀棋仍会及时更新。
-
-### 开局知识必须经过引擎复核
-
-内置开局库完全离线、只读，并为候选记录来源信息。书库只提供候选，不直接决定最终着法：候选必须合法，并进入 Pikafish 的同局面复核；只有进入引擎前列且差距在安全阈值内，才可能展示。
-
-### 面对真实窗口，而不是理想截图
-
-- 过滤 Dock、控制中心、通知中心等系统窗口，同时保留 Wine、Electron、iOS-on-Mac 等可能承载棋盘的窗口。
-- 目标窗口重建或短暂失效时，按稳定身份重新绑定，不偷偷退回整屏捕获。
-- 手动框选保存为窗口相对坐标，窗口移动到另一块显示器后仍能复用。
-- 自动规范红黑视角，并加强局面合法性、连续帧稳定性和识别诊断。
-
-## 一分钟上手
+## 快速开始
 
 1. 在 [Releases](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest) 下载 `XiangqiAssistant-v1.3.1-macOS-arm64.zip`。
-2. 解压，把 `象棋助手-TheOne.app` 拖入“应用程序”。
-3. 首次打开若 macOS 阻止运行，请在 Finder 中右键应用，选择“打开”。
-4. 前往“系统设置 → 隐私与安全性 → 屏幕录制”，允许象棋助手读取你选择的窗口。
-5. 打开中国象棋棋盘，点击菜单栏图标，刷新窗口列表并选择目标窗口。
-6. 确认棋盘区域；自动定位不理想时使用手动框选，然后开始分析。
+2. 解压后将 `象棋助手-TheOne.app` 拖入“应用程序”。
+3. 首次打开若被系统拦截，请在 Finder 中右键应用并选择“打开”。
+4. 在“系统设置 → 隐私与安全性 → 屏幕录制”允许该应用读取窗口。
+5. 打开象棋棋盘，点菜单栏图标，刷新窗口列表并选择目标窗口；必要时手动框选棋盘区域。
 
-> 当前下载包使用固定本地签名，尚未使用 Apple Developer ID 公证。首次运行可能需要手动确认。千问功能需要你在应用沙盒的 `Application Support/象棋助手/ModelCredentials/qwen-dashscope` 文件中放入自己的 API Key；仓库和安装包不包含凭证。
+> 目前下载包为 Apple Silicon 版本，使用固定本地签名，尚未 Apple Developer ID 公证。千问功能需要你自行配置 API Key；凭证仅保存在应用沙盒的 `Application Support/象棋助手/ModelCredentials/qwen-dashscope`，不包含在源码或安装包中。
 
-## 从一帧画面到一手建议
+## 本地、明确、可控
 
-![概念示意：窗口捕获、棋盘识别、本地引擎搜索与候选着法展示](docs/assets/xiangqi-assistant-workflow-v2.png)
+- 截图、棋盘识别、FEN、开局库与 Pikafish 搜索均在本机完成。
+- 不需要棋类平台账号、Cookie 或云端登录；项目没有遥测、广告 SDK、云同步或运行时更新检查。
+- 只读取你选择的窗口；不会静默回退为全屏捕获。
+- 公开构建不包含自动落子或鼠标控制功能。请遵守所使用平台的规则。
 
-> 上图为概念示意，不是软件界面截图。
-
-| 阶段 | 做了什么 | 防护边界 |
-|---|---|---|
-| 选择 | 用户明确选择一个可见应用窗口 | 不默认读取全部屏幕 |
-| 捕获 | ScreenCaptureKit 获取目标窗口画面 | 目标失效时不静默换成整屏 |
-| 识别 | ONNX 模型定位棋盘并识别 10×9、16 类布局 | 检查棋盘结构、双将与连续帧稳定性 |
-| 规范化 | 统一观察方向，生成带行棋方的 FEN | 不把反向棋盘当作另一盘棋 |
-| 分析 | Pikafish 通过 UCI 在本机搜索 | 搜索按局面修订号隔离，旧结果作废 |
-| 展示 | 输出中文着法、红方视角分数、深度、杀棋距离与主要变化 | 无合法着法被视为终局，不伪装成解析错误 |
-
-## 三种分析节奏
-
-| 模式 | 搜索策略 | 适合 |
-|---|---|---|
-| 普通 | 单一主线，约 2 秒 | 快速确认当前局面的主要方向 |
-| 主动 | 约 3.5 秒分析最多 4 个候选，再做进攻性选择 | 比较更积极的实战方案，同时避免缩短己方败势 |
-| 超强 | 2 秒快答 → 6 秒深化 → 复杂局面最多 15 秒 | 复盘、战术局面与杀棋线确认 |
-
-这些时间是程序内的搜索预算，不是对所有机器或局面响应速度的承诺。棋盘识别、窗口状态和系统负载也会影响体验。
-
-## 本地优先，不把棋盘送上云
-
-![概念示意：棋盘画面、识别模型与引擎分析被限制在本机处理链路中](docs/assets/xiangqi-assistant-local-v2.png)
-
-> 上图为概念示意。当前项目没有云端分析服务。
-
-- 截图、棋盘识别、FEN 生成、开局库和 Pikafish 搜索均在本机完成。
-- 不要求象棋平台账号、Cookie、API Key 或云端登录。
-- 代码中没有遥测、广告 SDK、云同步和运行时更新检查。
-- macOS 屏幕录制权限由系统管理，用户可随时撤销。
-- 公开构建明确排除 `UI/AutoPlayManager.swift`，不会点击棋盘或控制鼠标。
-
-## 专业实现
-
-| 层级 | 实现 |
-|---|---|
-| 应用形态 | SwiftUI + AppKit `NSPanel` 菜单栏应用 |
-| 窗口捕获 | Apple ScreenCaptureKit + 目标窗口身份重绑定 |
-| 棋盘定位 | TheOne1006 pose ONNX 模型 |
-| 局面识别 | TheOne1006 10×9、16 类布局模型 |
-| 推理运行时 | Microsoft ONNX Runtime 1.24.2 |
-| 局面表达 | 合法性检查、方向规范化、FEN、历史修订号 |
-| 识别连续性 | 五帧逐格投票、方向锁定、手动修正与按来源恢复 |
-| 棋力分析 | Pikafish 独立进程，通过 UCI 异步通信 |
-| 搜索可靠性 | 墙钟超时、EOF/进程退出恢复、取消后 drain、终局处理 |
-| 本地知识 | 带来源记录、合法性检查与引擎复核的离线开局库 |
-| 目标架构 | Apple Silicon arm64 |
-| Bundle ID | `com.xiangqi.XiangqiAssistant.TheOne` |
-
-### 当前明确支持
-
-- 选择窗口、刷新窗口列表和持续观察目标窗口；
-- 自动定位棋盘、确认式手动框选和多显示器下的窗口相对校准；
-- 为不同象棋程序分别保存棋盘区域与最近可信局面；
-- 正向与反向观察视角规范化、方向锁定和手动翻转；
-- 按格修正棋子、恢复自动识别、同步行棋方和重新同步局面；
-- 局面稳定性保护、FEN 生成和历史连续性；
-- 普通、主动、超强三种本地分析节奏；
-- 中文着法、红方视角分数、深度、杀棋距离和主要变化展示；
-- 引擎异常自动恢复与无合法着法终局处理。
-
-### 当前不承诺
-
-- Intel Mac 原生支持；
-- 适配所有棋盘皮肤、动画遮挡、缩放比例和特殊变体；
-- Apple Developer ID 签名与公证；
-- 自动落子、鼠标控制或绕过第三方平台规则；
-- 开局库能够覆盖所有开局，或替代引擎独立判断。
-
-请将本项目用于学习、复盘、界面识别研究和离线分析，并遵守所使用平台的规则。
-
-## 从源码构建
+## 从源码运行
 
 要求：macOS 14+、Xcode 15+、Apple Silicon。
 
@@ -167,56 +64,20 @@ cd xiangqi-assistant
 open XiangqiAssistant.xcodeproj
 ```
 
-在 Xcode 中选择 `XiangqiAssistant` scheme。若本机没有项目使用的固定签名身份，请改用自己的 Apple Development 身份，或执行无签名 Release 构建：
+如果没有项目所用的本地签名身份，可在 Xcode 选择自己的 Apple Development 身份，或无签名构建：
 
 ```bash
-xcodebuild \
-  -project XiangqiAssistant.xcodeproj \
-  -scheme XiangqiAssistant \
-  -configuration Release \
-  -derivedDataPath .build/DerivedData \
+xcodebuild -project XiangqiAssistant.xcodeproj -scheme XiangqiAssistant \
+  -configuration Release -derivedDataPath .build/DerivedData \
   CODE_SIGNING_ALLOWED=NO build
 ```
 
-### 逻辑验收覆盖
+仓库中的 `Tests/BrainLogicHarness.swift` 覆盖窗口筛选、棋盘方向、连续帧稳定性、评分视角、推荐稳定性、引擎超时与终局等核心逻辑；它不是完整 UI 自动化测试。
 
-仓库中的 `Tests/BrainLogicHarness.swift` 覆盖窗口候选过滤、反向棋盘规范化、五帧逐格共识、红黑分数与杀棋方向、推荐稳定性、开局库合法性、引擎终局、墙钟超时、搜索取消与替换等关键路径。它是独立逻辑验收程序，不是完整 UI 自动化测试套件。
+## 下载与许可证
 
-## 项目结构
+- 最新安装包与 SHA-256 校验文件见 [GitHub Releases](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest)。
+- 原创代码采用 [MIT License](LICENSE)。Pikafish、ONNX Runtime 与 TheOne1006 模型保留各自许可证或使用条款，详见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+- 问题反馈与兼容性信息欢迎通过 Issue 提交；不要公开账号、Cookie、私人截图或其他敏感内容。
 
-```text
-Sources/XiangqiAssistant/
-├── App/            # 生命周期、菜单栏、识别与分析调度
-├── Capture/        # 窗口策略、捕获、重绑定、框选与几何换算
-├── Recognition/    # ONNX 识别、模板校准、方向与局面稳定性
-├── Engine/         # Pikafish UCI、自适应搜索、开局库与着法策略
-├── UI/             # 浮窗、棋盘预览和状态展示
-└── Resources/      # 引擎、NNUE、ONNX 模型与离线开局库
-```
-
-## 下载与校验
-
-正式安装包和校验文件位于 [GitHub Releases](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest)。
-
-```bash
-shasum -a 256 -c XiangqiAssistant-v1.2.0-macOS-arm64.zip.sha256
-```
-
-校验成功会显示 `OK`。如果文件名、大小或摘要与 Release 页面不一致，请不要运行该安装包。
-
-## 第三方组件与许可证
-
-原创源码使用 MIT License。Pikafish、ONNX Runtime 和 TheOne1006 模型保留各自许可证或使用条款，不因本仓库采用 MIT 而改变。特别是 Pikafish 的再分发和修改受 GPLv3 约束；模型文件的来源与再分发边界请阅读 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
-
-## 路线图与贡献
-
-- 扩充经过来源审计与引擎复核的开局知识；
-- 提升更多棋盘皮肤、缩放和窗口框架的识别兼容性；
-- 增加可复现的固定局面回归样本；
-- 在具备正式证书后补齐 Developer ID 签名与公证。
-
-欢迎通过 GitHub Issue 提交可复现的问题、棋盘兼容信息和改进建议。请勿在公开 Issue 中上传账号、私人截图、Cookie 或其他敏感数据。
-
-**Jacksun** · [qinji@jack-sun.com](mailto:qinji@jack-sun.com)
-
-如果它帮助你看清了一盘棋，欢迎 [Star / 收藏这个项目](https://github.com/sunqinji666-dotcom/xiangqi-assistant)。
+[Jacksun](https://github.com/sunqinji666-dotcom) · [qinji@jack-sun.com](mailto:qinji@jack-sun.com)
