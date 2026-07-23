@@ -49,6 +49,22 @@ Contact: **Jacksun** · [qinji@jack-sun.com](mailto:qinji@jack-sun.com)
 4. 在“系统设置 → 隐私与安全性 → 屏幕录制”允许应用读取窗口。
 5. 打开象棋棋盘，点菜单栏图标，刷新窗口列表并选择目标窗口；必要时手动框选棋盘区域。
 
+## 启用千问建议（可选）
+
+本机 Pikafish 分析无需 API Key；只有“千问 AI 复核”和“千问建议”需要你的阿里云百炼 / DashScope API Key。
+
+1. 先启动一次应用后退出。打开 Finder，按 `⌘⇧G`，粘贴下面的目录：
+
+   ```text
+   ~/Library/Containers/com.xiangqi.XiangqiAssistant.TheOne/Data/Library/Application Support/象棋助手/ModelCredentials
+   ```
+
+2. 如目录不存在，请自行新建 `象棋助手` 和 `ModelCredentials` 两层文件夹。
+3. 在该目录新建一个**无扩展名**的纯文本文件，文件名必须是 `qwen-dashscope`。
+4. 将 API Key 单独粘贴到文件第一行，保存后重新打开应用即可。
+
+不要把 Key 写进源码、`README`、Issue 或 GitHub。该文件只由本机应用读取；发起你主动点击的千问请求时，棋盘裁图或局面文本会发送到配置的 DashScope 兼容接口。
+
 ## 本地、明确、可控
 
 - 截图、识别、FEN、开局库与 Pikafish 搜索都在本机完成。
@@ -56,7 +72,7 @@ Contact: **Jacksun** · [qinji@jack-sun.com](mailto:qinji@jack-sun.com)
 - 不需要棋类平台账号、Cookie 或云端登录；没有遥测、广告 SDK、云同步或运行时更新检查。
 - 公开构建不包含自动落子或鼠标控制。请遵守所用平台的规则。
 
-> 当前安装包仅支持 Apple Silicon、macOS 14+，使用固定本地签名，尚未 Apple Developer ID 公证。千问功能需要你自行配置 API Key，凭证只保存在应用沙盒的 `Application Support/象棋助手/ModelCredentials/qwen-dashscope`。
+> 当前安装包仅支持 Apple Silicon、macOS 14+，使用固定本地签名，尚未 Apple Developer ID 公证。
 
 ## 从源码运行
 
