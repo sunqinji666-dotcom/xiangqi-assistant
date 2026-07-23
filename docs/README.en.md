@@ -49,6 +49,22 @@ XiangqiAssistant is not an automatic player. It turns the board window you expli
 4. Allow Screen Recording in **System Settings → Privacy & Security**.
 5. Open a Xiangqi board, click the menu-bar icon, refresh the window list, and choose the target. Use manual board selection when needed.
 
+## Enable Qwen advice (optional)
+
+Local Pikafish analysis needs no API key. Your Alibaba Cloud Bailian / DashScope API key is only needed for **Qwen AI review** and **Qwen advice**.
+
+1. Launch the app once, then quit it. In Finder, press `⌘⇧G` and enter:
+
+   ```text
+   ~/Library/Containers/com.xiangqi.XiangqiAssistant.TheOne/Data/Library/Application Support/象棋助手/ModelCredentials
+   ```
+
+2. If it does not exist, create the `象棋助手` and `ModelCredentials` folders.
+3. Create a plain-text file in that folder with **no extension**, named exactly `qwen-dashscope`.
+4. Paste the API key alone on its first line, save it, then reopen the app.
+
+Never put the key in source code, a README, an Issue, or GitHub. Only the local app reads this file. When you explicitly request a Qwen feature, a board crop or position text is sent to the configured DashScope-compatible endpoint.
+
 ## Local and deliberate
 
 - Captures, recognition, FEN generation, opening data, and Pikafish search run locally.
@@ -56,7 +72,7 @@ XiangqiAssistant is not an automatic player. It turns the board window you expli
 - No chess-platform account, Cookie, cloud login, telemetry, ad SDK, cloud sync, or runtime update check is required.
 - The public build has no automatic move or mouse-control behavior. Follow the rules of the platform you use.
 
-> The package supports Apple Silicon on macOS 14+ and uses a persistent local signature; it is not Apple Developer ID notarized. Qwen requires your own API key, stored only in the app sandbox at `Application Support/象棋助手/ModelCredentials/qwen-dashscope`.
+> The package supports Apple Silicon on macOS 14+ and uses a persistent local signature; it is not Apple Developer ID notarized.
 
 ## Build from source
 
