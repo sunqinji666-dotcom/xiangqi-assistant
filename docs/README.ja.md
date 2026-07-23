@@ -49,6 +49,22 @@ Contact: **Jacksun** · [qinji@jack-sun.com](mailto:qinji@jack-sun.com)
 4. 「システム設定 → プライバシーとセキュリティ → 画面収録」で許可します。
 5. 象棋盤面を開き、メニューバーアイコンからウィンドウを選択します。必要なら手動選択を使います。
 
+## Qwen 提案を有効にする（任意）
+
+ローカル Pikafish の解析には API Key は不要です。**Qwen AI 復核**と**Qwen 提案**にだけ、自分の Alibaba Cloud Bailian / DashScope API Key が必要です。
+
+1. アプリを一度起動してから終了します。Finder で `⌘⇧G` を押し、次の場所を入力します。
+
+   ```text
+   ~/Library/Containers/com.xiangqi.XiangqiAssistant.TheOne/Data/Library/Application Support/象棋助手/ModelCredentials
+   ```
+
+2. 存在しない場合は、`象棋助手` と `ModelCredentials` のフォルダを作成します。
+3. その中に、拡張子なしで名前を正確に `qwen-dashscope` としたプレーンテキストファイルを作成します。
+4. API Key だけを1行目に貼り付けて保存し、アプリを再起動します。
+
+Key をソースコード、README、Issue、GitHub に書き込まないでください。このファイルを読むのはローカルアプリだけです。Qwen の機能を明示的に実行したときだけ、盤面の切り抜き画像または局面テキストが設定済みの DashScope 互換エンドポイントに送られます。
+
 ## ローカルで、明確に、制御可能に
 
 - キャプチャ、盤面認識、FEN、定跡、Pikafish の探索は Mac 上で処理します。
@@ -56,7 +72,7 @@ Contact: **Jacksun** · [qinji@jack-sun.com](mailto:qinji@jack-sun.com)
 - 象棋サイトのアカウント、Cookie、クラウドログイン、テレメトリ、広告 SDK、クラウド同期、実行時更新確認は不要です。
 - 公開ビルドに自動着手やマウス操作はありません。利用するプラットフォームの規則を守ってください。
 
-> 配布版は Apple Silicon 向け、macOS 14+ 対応です。固定ローカル署名を使用し、Apple Developer ID による公証は未実施です。Qwen を使うには、自分の API Key をアプリサンドボックスの `Application Support/象棋助手/ModelCredentials/qwen-dashscope` に保存します。
+> 配布版は Apple Silicon 向け、macOS 14+ 対応です。固定ローカル署名を使用し、Apple Developer ID による公証は未実施です。
 
 ## ソースからビルド
 
