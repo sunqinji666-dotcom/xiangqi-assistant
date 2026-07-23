@@ -55,8 +55,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     )
     private let boardSelector = BoardSelectorOverlay()
     private let qwenReviewService = QwenBoardReviewService()
-    /// A short-lived, lower-resource second engine verifies Qwen's already
-    /// independent proposals without interrupting the green main search.
+    /// A short-lived, lower-resource second engine supplies independently
+    /// ranked candidates for Qwen without interrupting the green main search.
     private let qwenCandidateEngine = PikafishEngine(
         threads: 2,
         hashMegabytes: 128
@@ -79,23 +79,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let response: EngineMove
         let targetSide: PieceSide
         let mode: AnalysisMode
-    }
-
-    /// Qwen owns the proposal order.  Pikafish is used only after Qwen has
-    /// spoken, to verify that a proposal is legal and not a clear tactical
-    /// blunder compared with the green principal variation.
-    private struct VerifiedQwenProposal {
-        let proposal: QwenIndependentMoveProposal
-        let auditMove: EngineMove
-        /// Positive means the purple move evaluated better than green in the
-        /// same local verification search; nil means mate scores are involved.
-        let deltaToGreen: Int?
-        let verification: String
-    }
-
-    private struct QwenProposalValidation {
-        let selected: VerifiedQwenProposal?
-        let retryFeedback: String
     }
     private var ponderHint: PonderHint?
     private var calibrationObserver: AnyCancellable?
@@ -126,15 +109,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private enum ManualSquareOverride {
         case empty
         case piece(Piece)
-    }
-
-    /// A move reconstructed from a trusted, manually corrected board to the
-    /// newest screenshot.  The screenshot is evidence of a move, not a new
-    /// authority that can discard a square the user already corrected.
-    private struct ManualTrustedTransition {
-        let board: BoardState
-        let moves: [UCIMove]
-        let mismatches: Int
     }
     private enum AIReviewFlowError: LocalizedError {
         case captureFailed(String)
@@ -1013,28 +987,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             saveCaptureDiagnostic(image)
         }
 
-        let rawBoard = wizardReplay?.board ?? result!.boardState
+        var board = wizardReplay?.board ?? result!.boardState
         let usedWizardReplay = wizardReplay != nil
-        if rawBoard.isValid {
-            latestRawRecognizedBoard = rawBoard
+        if board.isValid {
+            latestRawRecognizedBoard = board
         }
-        // A manual square is not a permanent coordinate sticker. When the
-        // screenshot clearly shows one or two real moves from the previously
-        // trusted board, carry the user's correction through those moves and
-        // only then rebase its affected square(s). If no unique transition is
-        // visible, retain the correction rather than letting a noisy frame
-        // erase it.
-        let manualTransition = lastConfirmedBoard.flatMap {
-            inferredManualTransition(from: $0, observed: rawBoard)
-        }
-        if let manualTransition {
-            rebaseManualOverrides(
-                through: manualTransition,
-                observed: rawBoard
-            )
-        }
-        var board = manualTransition?.board
-            ?? applyingManualOverrides(to: rawBoard)
+        board = applyingManualOverrides(to: board)
         let previewIsReversed = !usedWizardReplay
             && (result?.isReversedForDisplay ?? false)
         // XQWizard exposes its visible score sheet through macOS
@@ -1478,109 +1436,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return corrected
     }
 
-    /// Finds a unique one- or two-ply continuation of the manually trusted
-    /// position that best explains the new screenshot. This runs only while
-    /// manual edits exist, so the ordinary recognizer remains unchanged.
-    private func inferredManualTransition(
-        from trusted: BoardState,
-        observed: BoardState
-    ) -> ManualTrustedTransition? {
-        guard !manualSquareOverrides.isEmpty,
-              trusted.isValid,
-              observed.isValid
-        else { return nil }
-
-        let baselineMismatch = trusted.layoutMismatchCount(with: observed)
-        // A static manually corrected square creates one mismatch by design.
-        // Wait until the screenshot contains at least the footprint of a real
-        // move as well, otherwise normal recognition flicker could be mistaken
-        // for a move and relocate a user-confirmed piece.
-        guard baselineMismatch >= 2 else { return nil }
-
-        let maximumMismatches = min(
-            12,
-            max(3, manualSquareOverrides.count + 2)
-        )
-        var candidatesByLayout: [String: ManualTrustedTransition] = [:]
-        for firstSide in [PieceSide.red, .black] {
-            guard let match = trusted.bestMatchingTransition(
-                to: observed,
-                firstSide: firstSide,
-                maxMismatches: maximumMismatches
-            ),
-            let moves = trusted.transitionMoves(
-                to: match.state,
-                firstSide: firstSide
-            ),
-            moves.count == match.plies
-            else { continue }
-
-            let candidate = ManualTrustedTransition(
-                board: match.state,
-                moves: moves,
-                mismatches: match.mismatches
-            )
-            let key = match.state.toFEN()
-            if let existing = candidatesByLayout[key],
-               existing.mismatches <= candidate.mismatches {
-                continue
-            }
-            candidatesByLayout[key] = candidate
-        }
-
-        let candidates = candidatesByLayout.values.sorted {
-            $0.mismatches < $1.mismatches
-        }
-        guard let best = candidates.first,
-              best.mismatches < baselineMismatch,
-              (candidates.dropFirst().first?.mismatches ?? .max) > best.mismatches
-        else { return nil }
-        return best
-    }
-
-    /// Rebases only the user's existing corrections through the detected move
-    /// path. A cannon the user added is therefore preserved when some other
-    /// piece moves, moved to its new square when it moves, and removed only if
-    /// it is genuinely captured. Unrelated recognizer noise is never promoted
-    /// into a new permanent manual correction.
-    private func rebaseManualOverrides(
-        through transition: ManualTrustedTransition,
-        observed: BoardState
-    ) {
-        let original = manualSquareOverrides
-        var rebased = original
-
-        for position in original.keys {
-            if transition.board[position] == observed[position] {
-                // Recognition has caught up with this corrected square; it no
-                // longer needs a manual pin.
-                rebased.removeValue(forKey: position)
-            } else if let piece = transition.board[position] {
-                rebased[position] = .piece(piece)
-            } else {
-                rebased[position] = .empty
-            }
-        }
-
-        for move in transition.moves {
-            // A manually verified piece can only need a new override at its
-            // move endpoints. Do not pin arbitrary screenshot discrepancies.
-            guard original[move.from] != nil || original[move.to] != nil
-            else { continue }
-            for position in [move.from, move.to] {
-                if transition.board[position] == observed[position] {
-                    rebased.removeValue(forKey: position)
-                } else if let piece = transition.board[position] {
-                    rebased[position] = .piece(piece)
-                } else {
-                    rebased[position] = .empty
-                }
-            }
-        }
-
-        manualSquareOverrides = rebased
-    }
-
     /// Immediately trusts the board already visible in the preview and starts
     /// the local engine. No new screenshot, temporal vote, or frame transition
     /// is required. The recognition pipeline itself remains unchanged.
@@ -1633,14 +1488,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         let requestedFEN = board.toFEN()
+        let requestedGreenMove = greenMove.uci
         let side = currentSideToMove
         vm.qwenAdvicePhase = .loading
         vm.qwenAdviceMoveUCI = ""
         vm.qwenAdviceMoveCN = ""
         vm.qwenAdviceReason = ""
         vm.qwenAdvicePlan = ""
-        vm.qwenAdviceStyle = ""
-        vm.qwenAdviceSide = nil
         vm.qwenAdviceConfidence = nil
         vm.qwenAdviceMessage = ""
         vm.qwenAdviceCandidateRank = nil
@@ -1651,44 +1505,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         qwenAdviceTask = Task { @MainActor [weak self] in
             guard let self else { return }
             do {
-                // Important ordering: Qwen does not see a local candidate
-                // list or score here. It proposes first; Pikafish verifies
-                // later, so a purple move can genuinely differ from green.
-                var proposalBatch = try await self.qwenReviewService.proposeIndependently(
-                    board: board,
-                    sideToMove: side
+                try await self.qwenCandidateEngine.start()
+                let rawCandidates = try await self.qwenCandidateEngine.analyzeCandidates(
+                    fen: requestedFEN,
+                    movetime: 3_500,
+                    count: 6
                 )
-                var validation = try await self.validateQwenProposals(
-                    proposalBatch.proposals,
+                let candidates = self.safeQwenCandidates(rawCandidates)
+                guard !candidates.isEmpty else {
+                    throw QwenBoardReviewError.invalidAdvice
+                }
+                let result = try await self.qwenReviewService.advise(
                     board: board,
                     sideToMove: side,
-                    greenMove: greenMove,
-                    fen: requestedFEN
+                    engineCandidates: candidates,
+                    greenMoveUCI: requestedGreenMove
                 )
-
-                // A first failure is useful feedback, not a dead end. Give
-                // Qwen one independent retry without exposing engine scores
-                // or a pre-ranked answer list.
-                if validation.selected == nil {
-                    proposalBatch = try await self.qwenReviewService.proposeIndependently(
-                        board: board,
-                        sideToMove: side,
-                        retryFeedback: validation.retryFeedback
-                    )
-                    validation = try await self.validateQwenProposals(
-                        proposalBatch.proposals,
-                        board: board,
-                        sideToMove: side,
-                        greenMove: greenMove,
-                        fen: requestedFEN
-                    )
-                }
-                guard let selected = validation.selected else {
-                    self.vm.qwenAdvicePhase = .failed
-                    self.vm.qwenAdviceMessage = "千问两轮独立方案均未通过本地验棋；绿色走法继续有效"
-                    self.qwenAdviceTask = nil
-                    return
-                }
                 try Task.checkCancellation()
                 guard var current = self.vm.lastAnalyzedBoard else {
                     throw QwenBoardReviewError.invalidBoard
@@ -1701,28 +1533,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     return
                 }
                 self.qwenAdviceFEN = requestedFEN
-                self.vm.qwenAdviceMoveUCI = selected.proposal.move.uci
-                self.vm.qwenAdviceMoveCN = ChineseNotation.convert(
-                    uci: selected.proposal.move.uci,
-                    state: board
-                )
-                self.vm.qwenAdviceReason = self.verifiedQwenReason(
-                    for: selected.proposal.move,
-                    board: board,
-                    sideToMove: side,
-                    qwenReason: selected.proposal.reason
-                )
-                self.vm.qwenAdvicePlan = selected.proposal.plan
-                self.vm.qwenAdviceStyle = selected.proposal.style
-                self.vm.qwenAdviceSide = side
-                self.vm.qwenAdviceConfidence = selected.proposal.confidence
-                self.vm.qwenAdviceMessage = selected.verification
-                self.vm.qwenAdviceCandidateRank = proposalBatch.proposals.firstIndex {
-                    $0.move == selected.proposal.move
-                }.map { $0 + 1 }
-                self.vm.qwenAdviceCandidateCount = proposalBatch.proposals.count
-                self.vm.qwenAdviceScoreGapCentipawns = selected.deltaToGreen
-                self.vm.qwenAdviceAgreesWithGreen = selected.proposal.move == greenMove
+                self.vm.qwenAdviceMoveUCI = result.move.uci
+                self.vm.qwenAdviceMoveCN = result.moveCN
+                self.vm.qwenAdviceReason = result.reason
+                self.vm.qwenAdvicePlan = result.plan
+                self.vm.qwenAdviceConfidence = result.confidence
+                self.vm.qwenAdviceMessage = result.modelName
+                self.vm.qwenAdviceCandidateRank = result.candidateRank
+                self.vm.qwenAdviceCandidateCount = result.candidateCount
+                self.vm.qwenAdviceScoreGapCentipawns = result.scoreGapCentipawns
+                self.vm.qwenAdviceAgreesWithGreen = result.move.uci == self.vm.bestMove
                 self.vm.qwenAdvicePhase = .ready
                 self.qwenAdviceTask = nil
             } catch is CancellationError {
@@ -1735,138 +1555,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// Runs an apples-to-apples local verification search over only the green
-    /// move and Qwen's already-proposed moves.  The verifier cannot seed Qwen
-    /// with a preferred answer because this happens strictly after proposal.
-    private func validateQwenProposals(
-        _ proposals: [QwenIndependentMoveProposal],
-        board: BoardState,
-        sideToMove: PieceSide,
-        greenMove: UCIMove,
-        fen: String
-    ) async throws -> QwenProposalValidation {
-        var uniqueMoves = [greenMove.uci]
-        for proposal in proposals where !uniqueMoves.contains(proposal.move.uci) {
-            uniqueMoves.append(proposal.move.uci)
-        }
-        try await qwenCandidateEngine.start()
-        let audited = try await qwenCandidateEngine.analyzeCandidates(
-            fen: fen,
-            movetime: 4_000,
-            count: uniqueMoves.count,
-            searchMoves: uniqueMoves
-        )
-        let scoresByMove = Dictionary(
-            audited.map { ($0.uci, $0) },
-            uniquingKeysWith: { first, _ in first }
-        )
-        guard let greenAudit = scoresByMove[greenMove.uci] else {
-            throw QwenBoardReviewError.invalidAdvice
-        }
-
-        var rejected: [String] = []
-        for proposal in proposals {
-            guard let audit = scoresByMove[proposal.move.uci] else {
-                rejected.append(proposal.move.uci)
-                continue
+    /// Keep Qwen expressive without allowing it to select a strategically
+    /// losing move.  The second Pikafish instance is authoritative here:
+    /// ordinary alternatives stay within 1.20 pawns of its first choice, and
+    /// a forced winning mate may only be replaced by another winning mate.
+    private func safeQwenCandidates(_ candidates: [EngineMove]) -> [EngineMove] {
+        guard let best = candidates.first else { return [] }
+        let filtered: [EngineMove]
+        if let bestMate = best.mateIn, bestMate > 0 {
+            filtered = candidates.filter { ($0.mateIn ?? 0) > 0 }
+        } else if let bestMate = best.mateIn, bestMate < 0 {
+            filtered = candidates.filter { candidate in
+                guard let mate = candidate.mateIn else { return true }
+                return mate < 0
             }
-            if let verified = verifiedProposal(
-                proposal,
-                audit: audit,
-                green: greenAudit,
-                board: board,
-                sideToMove: sideToMove
-            ) {
-                return QwenProposalValidation(
-                    selected: verified,
-                    retryFeedback: ""
-                )
-            }
-            rejected.append(proposal.move.uci)
-        }
-        let names = rejected.joined(separator: ", ")
-        return QwenProposalValidation(
-            selected: nil,
-            retryFeedback: "上一轮的独立方案（\(names)）都未通过本地验棋安全门槛。请换一条不同的合法路线，优先避免明显的战术损失；不要猜测任何引擎推荐。"
-        )
-    }
-
-    private func verifiedProposal(
-        _ proposal: QwenIndependentMoveProposal,
-        audit: EngineMove,
-        green: EngineMove,
-        board: BoardState,
-        sideToMove: PieceSide
-    ) -> VerifiedQwenProposal? {
-        let verification: String
-        let delta: Int?
-
-        if let greenMate = green.mateIn, greenMate > 0 {
-            guard let proposalMate = audit.mateIn,
-                  proposalMate > 0,
-                  proposalMate <= greenMate + 2
-            else { return nil }
-            delta = nil
-            verification = proposalMate < greenMate
-                ? "本地验棋：千问方案更快形成必杀"
-                : "本地验棋：千问方案保留强制胜势"
-        } else if let greenMate = green.mateIn, greenMate < 0 {
-            guard let proposalMate = audit.mateIn,
-                  proposalMate < 0,
-                  abs(proposalMate) >= abs(greenMate)
-            else { return nil }
-            delta = nil
-            verification = "本地验棋：千问方案是较顽强的防守路线"
-        } else if let proposalMate = audit.mateIn {
-            guard proposalMate > 0 else { return nil }
-            delta = nil
-            verification = "本地验棋：千问方案发现强制胜势"
         } else {
-            let scoreDelta = audit.score - green.score
-            // Qwen may be creative, but cannot sacrifice more than 0.80 pawn
-            // to do it. This is a post-check, not a candidate pre-filter.
-            guard scoreDelta >= -80 else { return nil }
-            delta = scoreDelta
-            if scoreDelta > 15 {
-                verification = "本地验棋：千问方案在同等复算下优于绿色"
-            } else if scoreDelta >= -15 {
-                verification = "本地验棋：与绿色基本并列"
-            } else {
-                verification = "本地验棋：可下的主动备选（轻微让分）"
+            filtered = candidates.filter { candidate in
+                guard candidate.mateIn == nil else {
+                    return (candidate.mateIn ?? -1) > 0
+                }
+                return best.score - candidate.score <= 120
             }
         }
-
-        guard board.isLegalMove(proposal.move, for: sideToMove) else { return nil }
-        return VerifiedQwenProposal(
-            proposal: proposal,
-            auditMove: audit,
-            deltaToGreen: delta,
-            verification: verification
-        )
-    }
-
-    private func verifiedQwenReason(
-        for move: UCIMove,
-        board: BoardState,
-        sideToMove: PieceSide,
-        qwenReason: String
-    ) -> String {
-        let capture = board[move.to].map {
-            "吃掉对方\($0.kind.displayName(side: $0.side))"
-        } ?? "不吃子"
-        let check = board.givesCheck(after: move, by: sideToMove)
-            ? "构成将军"
-            : "不构成将军"
-        let conflictMarkers = ["将军", "叫将", "将对方", "将帅", "吃子", "吃掉", "捕获", "夺子"]
-        let qwenClaimsTactics = conflictMarkers.contains { qwenReason.contains($0) }
-        if qwenClaimsTactics {
-            return "本地规则验证：该步\(capture)，\(check)；千问战术措辞以本地验棋为准"
-        }
-        let compactReason = qwenReason.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !compactReason.isEmpty else {
-            return "本地规则验证：该步\(capture)，\(check)"
-        }
-        return "本地规则验证：该步\(capture)，\(check) · 千问思路：\(compactReason)"
+        return Array(filtered.prefix(6))
     }
 
     private func clearQwenAdviceIfStale(comparedWith fen: String) {
@@ -1879,8 +1590,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         vm.qwenAdviceMoveCN = ""
         vm.qwenAdviceReason = ""
         vm.qwenAdvicePlan = ""
-        vm.qwenAdviceStyle = ""
-        vm.qwenAdviceSide = nil
         vm.qwenAdviceConfidence = nil
         vm.qwenAdviceMessage = ""
         vm.qwenAdviceCandidateRank = nil

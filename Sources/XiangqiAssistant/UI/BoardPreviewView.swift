@@ -107,19 +107,7 @@ struct BoardPreviewView: View {
             let dy = h / 9
             let state = vm.lastAnalyzedBoard
             let move = UCIMove(uci: vm.bestMove)
-            // Never leave a purple arrow on a board that has already moved,
-            // changed side-to-move, or no longer admits that exact move.  The
-            // text strip can be cleared a rendering pass later than the board;
-            // this local gate prevents a stale suggestion from looking like a
-            // coordinate-mapping bug.
-            let qwenMove = UCIMove(uci: vm.qwenAdviceMoveUCI).flatMap { candidate -> UCIMove? in
-                guard vm.qwenAdvicePhase == .ready,
-                      vm.qwenAdviceSide == vm.currentTurnSide,
-                      let state,
-                      state.isLegalMove(candidate, for: vm.currentTurnSide)
-                else { return nil }
-                return candidate
-            }
+            let qwenMove = UCIMove(uci: vm.qwenAdviceMoveUCI)
             let reversed = vm.previewIsReversed
 
             ZStack {

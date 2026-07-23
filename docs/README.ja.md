@@ -6,17 +6,17 @@
 
 ### 局面を見て、次の一手を読む。
 
-中国象棋の盤面ウィンドウを選択し、局面を認識して Mac 上の Pikafish で解析するメニューバーアプリです。任意の Qwen 提案も表示前にローカルで検証します。
+中国象棋の盤面ウィンドウを選択し、局面を認識して Mac 上の Pikafish で解析するメニューバーアプリです。任意の Qwen 提案はローカル候補から選び、実戦的な計画を補足します。
 
 [简体中文](../README.md) · [English](README.en.md) · **日本語**
 
-[v1.3.1 をダウンロード](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest) · [使い始める](#クイックスタート) · [Star](https://github.com/sunqinji666-dotcom/xiangqi-assistant)
+[v1.3.2 をダウンロード](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest) · [使い始める](#クイックスタート) · [Star](https://github.com/sunqinji666-dotcom/xiangqi-assistant)
 
 </div>
 
 | 現行版 | 対応環境 | ライセンス |
 |---|---|---|
-| v1.3.1 · Build 5 | macOS 14+ · Apple Silicon | MIT（第三者コンポーネントを除く） |
+| v1.3.2 · Build 6 | macOS 14+ · Apple Silicon | MIT（第三者コンポーネントを除く） |
 
 ## できること
 
@@ -26,20 +26,20 @@
 - ローカルの Pikafish が候補手、評価、深さ、主要変化を解析します。
 - Normal、Aggressive、Ultra の三つの解析テンポ。局面が変わらなければ探索を継続します。
 - 手動の盤面選択、駒の修正、盤面反転、クライアントごとの調整保存に対応します。
-- 任意の Qwen 提案は独立して案を出し、別のローカル Pikafish が合法性と明白な戦術リスクを確認します。
+- 任意の Qwen 提案はローカルで選別した候補から一手を選び、簡潔な実戦計画を補足します。
 
 ## 一つの盤面、二つの視点
 
-| ローカルエンジン解析 | Qwen の独立提案 |
+| ローカルエンジン解析 | Qwen 提案 |
 |---|---|
 | ![Pikafish の着手・評価・変化表示](assets/product/analysis.png) | ![盤面下に表示されるローカル検証済み Qwen 提案](assets/product/qwen-review.png) |
-| Pikafish が主変化と評価を示します。 | 緑のエンジン推奨を先に渡さず、最大3案をローカルで検証します。 |
+| Pikafish が主変化と評価を示します。 | ローカル候補から一手を選び、短い理由と計画を補足します。 |
 
 ![認識状態、矢印、手動修正を備えた盤面プレビュー](assets/product/board.png)
 
 ## クイックスタート
 
-1. [Releases](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest) から `XiangqiAssistant-v1.3.1-macOS-arm64.zip` をダウンロードします。
+1. [Releases](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest) から `XiangqiAssistant-v1.3.2-macOS-arm64.zip` をダウンロードします。
 2. 解凍し、`象棋助手-TheOne.app` を「アプリケーション」に移動します。
 3. 初回起動を macOS が止めた場合は、Finder で右クリックして「開く」を選びます。
 4. 「システム設定 → プライバシーとセキュリティ → 画面収録」で許可します。

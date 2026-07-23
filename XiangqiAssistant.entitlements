@@ -10,12 +10,12 @@
     <key>com.apple.security.screen-capture</key>
     <true/>
 
-    <!-- Read-only access to user-selected files (for engine binary if outside bundle) -->
-    <key>com.apple.security.files.user-selected.read-only</key>
+    <!-- Manual-only Qwen board review and advice over HTTPS -->
+    <key>com.apple.security.network.client</key>
     <true/>
 
-    <!-- Manual Qwen review/advice requests use an outbound HTTPS connection. -->
-    <key>com.apple.security.network.client</key>
+    <!-- Read-only access to user-selected files (for engine binary if outside bundle) -->
+    <key>com.apple.security.files.user-selected.read-only</key>
     <true/>
 </dict>
 </plist>

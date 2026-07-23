@@ -6,17 +6,17 @@
 
 ### See the position. See the next move.
 
-A macOS menu-bar companion for Chinese-chess analysis: select a board window, reconstruct the position, and analyse it with local Pikafish. Optional Qwen ideas are verified locally before display.
+A macOS menu-bar companion for Chinese-chess analysis: select a board window, reconstruct the position, and analyse it with local Pikafish. Optional Qwen advice selects from local candidates and adds a practical plan.
 
 [简体中文](../README.md) · **English** · [日本語](README.ja.md)
 
-[Download v1.3.1](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest) · [Quick start](#quick-start) · [Star the project](https://github.com/sunqinji666-dotcom/xiangqi-assistant)
+[Download v1.3.2](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest) · [Quick start](#quick-start) · [Star the project](https://github.com/sunqinji666-dotcom/xiangqi-assistant)
 
 </div>
 
 | Current release | Platform | License |
 |---|---|---|
-| v1.3.1 · Build 5 | macOS 14+ · Apple Silicon | MIT (third-party exceptions) |
+| v1.3.2 · Build 6 | macOS 14+ · Apple Silicon | MIT (third-party exceptions) |
 
 ## What it does
 
@@ -26,20 +26,20 @@ A macOS menu-bar companion for Chinese-chess analysis: select a board window, re
 - Uses local Pikafish for candidate moves, evaluation, depth, and principal variation.
 - Offers Normal, Aggressive, and Ultra analysis; unchanged positions can continue to deepen.
 - Supports manual board selection, piece correction, orientation flip, and per-client calibration.
-- Optional Qwen advice proposes independent plans, then a separate local Pikafish flow checks legality and obvious tactical risk.
+- Optional Qwen advice chooses from locally screened candidates and adds a concise practical plan.
 
 ## Two perspectives, one board
 
-| Local engine analysis | Independent Qwen advice |
+| Local engine analysis | Qwen advice |
 |---|---|
 | ![Local engine move, score, and continuation](assets/product/analysis.png) | ![Locally verified Qwen advice under the board](assets/product/qwen-review.png) |
-| Pikafish provides a main line and evaluation. | It does not receive the green engine recommendation first; up to three plans are locally verified. |
+| Pikafish provides a main line and evaluation. | It selects a move from local candidates and adds a short rationale and plan. |
 
 ![Board preview with recognition state, move arrows, and manual correction](assets/product/board.png)
 
 ## Quick start
 
-1. Download `XiangqiAssistant-v1.3.1-macOS-arm64.zip` from [Releases](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest).
+1. Download `XiangqiAssistant-v1.3.2-macOS-arm64.zip` from [Releases](https://github.com/sunqinji666-dotcom/xiangqi-assistant/releases/latest).
 2. Unzip it and move `象棋助手-TheOne.app` to Applications.
 3. If macOS blocks the first launch, right-click the app in Finder and choose **Open**.
 4. Allow the app in **System Settings → Privacy & Security → Screen Recording**.

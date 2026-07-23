@@ -4,6 +4,12 @@ DerivedData/
 dist/
 /Engine/
 HANDOVER.md
+# Local duplicate source copies are not Xcode target members. The maintained
+# public sources live in App/, UI/, and Recognition/.
+/Sources/XiangqiAssistant/XiangqiAssistantApp.swift
+/Sources/XiangqiAssistant/AssistantView.swift
+/Sources/XiangqiAssistant/BoardPreviewView.swift
+/Sources/XiangqiAssistant/QwenBoardReviewService.swift
 *.xcarchive
 *.dSYM
 *.zip

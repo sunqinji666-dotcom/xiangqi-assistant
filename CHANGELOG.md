@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.3.2 — 2026-07-23
+
+- Rebased the public project on the current local source snapshot and rebuilt
+  the Apple-Silicon macOS package.
+- Updated the Qwen advice flow to choose from locally screened engine
+  candidates and add a short practical plan.
+- Restored the public credential boundary: API keys are read only from the app
+  sandbox, never from a machine-specific absolute path.
+
 ## v1.3.1 — 2026-07-22
 
 - Rebuilt and repackaged the current verified Qwen-independent-advice build.

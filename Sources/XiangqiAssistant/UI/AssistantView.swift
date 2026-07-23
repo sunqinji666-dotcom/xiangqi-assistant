@@ -101,10 +101,6 @@ class AssistantViewModel: ObservableObject {
     @Published var qwenAdviceMoveCN: String = ""
     @Published var qwenAdviceReason: String = ""
     @Published var qwenAdvicePlan: String = ""
-    @Published var qwenAdviceStyle: String = ""
-    /// The turn for which Qwen made this proposal.  BoardPreview uses it as
-    /// an extra stale-arrow guard even during a rapid recognition update.
-    @Published var qwenAdviceSide: PieceSide? = nil
     @Published var qwenAdviceConfidence: Double? = nil
     @Published var qwenAdviceMessage: String = ""
     @Published var qwenAdviceCandidateRank: Int? = nil
@@ -652,7 +648,7 @@ struct AssistantView: View {
                 HStack(spacing: 7) {
                     Text("千问独立建议")
                         .font(.caption.weight(.semibold))
-                    Text("千问先提案 · 本地后验棋")
+                    Text("第二路引擎验证的独立备选")
                         .font(.caption2)
                         .foregroundStyle(.purple)
                     if let confidence = vm.qwenAdviceConfidence,
@@ -665,7 +661,7 @@ struct AssistantView: View {
 
                 switch vm.qwenAdvicePhase {
                 case .idle:
-                    Text("千问先独立提出三套可走方案，本地只在事后验棋")
+                    Text("第二路本地引擎先筛选强着，千问可独立选择不同的紫色方案")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 case .loading:
@@ -688,11 +684,6 @@ struct AssistantView: View {
                                 .font(.caption2.monospaced().weight(.semibold))
                                 .foregroundStyle(.purple.opacity(0.85))
                         }
-                        if !vm.qwenAdviceStyle.isEmpty {
-                            Text(vm.qwenAdviceStyle)
-                                .font(.caption2.weight(.semibold))
-                                .foregroundStyle(.purple)
-                        }
                         Text(vm.qwenAdviceReason)
                             .font(.caption2)
                             .foregroundStyle(.secondary)
@@ -701,7 +692,7 @@ struct AssistantView: View {
                     HStack(spacing: 7) {
                         if let rank = vm.qwenAdviceCandidateRank {
                             let total = vm.qwenAdviceCandidateCount ?? rank
-                            Text("千问方案 #\(rank)/\(total)")
+                            Text("第二路引擎 #\(rank)/\(total)")
                         }
                         if vm.qwenAdviceAgreesWithGreen == true {
                             Text("与绿色一致")
@@ -711,12 +702,7 @@ struct AssistantView: View {
                                 .foregroundStyle(.purple)
                         }
                         if let gap = vm.qwenAdviceScoreGapCentipawns {
-                            Text(scoreDeltaText(gap))
-                        }
-                        if !vm.qwenAdviceMessage.isEmpty {
-                            Text(vm.qwenAdviceMessage)
-                                .foregroundStyle(.purple.opacity(0.82))
-                                .lineLimit(1)
+                            Text(gap == 0 ? "评价并列" : "评价差 \(formatScoreGap(gap))")
                         }
                         Text(vm.qwenAdvicePlan)
                             .lineLimit(1)
@@ -767,10 +753,8 @@ struct AssistantView: View {
         )
     }
 
-    private func scoreDeltaText(_ centipawns: Int) -> String {
-        if centipawns == 0 { return "复算并列" }
-        let magnitude = String(format: "%.2f兵", Double(abs(centipawns)) / 100.0)
-        return centipawns > 0 ? "复算优于绿 +\(magnitude)" : "较绿 -\(magnitude)"
+    private func formatScoreGap(_ centipawns: Int) -> String {
+        String(format: "%.2f兵", Double(max(0, centipawns)) / 100.0)
     }
 }
 

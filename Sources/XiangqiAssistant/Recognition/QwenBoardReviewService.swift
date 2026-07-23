@@ -22,21 +22,6 @@ struct QwenBoardAdviceResult {
     let agreesWithGreen: Bool
 }
 
-/// A move proposed by Qwen before it sees any engine ranking.  The app later
-/// validates this independently generated move with Pikafish.
-struct QwenIndependentMoveProposal {
-    let move: UCIMove
-    let style: String
-    let reason: String
-    let plan: String
-    let confidence: Double
-}
-
-struct QwenIndependentProposalBatch {
-    let proposals: [QwenIndependentMoveProposal]
-    let modelName: String
-}
-
 enum QwenBoardReviewError: LocalizedError {
     case noCredential
     case imageEncodingFailed
@@ -201,85 +186,6 @@ final class QwenBoardReviewService: @unchecked Sendable {
             confidence: min(1, max(0, result.confidence)),
             modelName: reviewModelName,
             note: notes.joined(separator: " · ")
-        )
-    }
-
-    /// Qwen's actual turn to think: it receives only the position and the
-    /// rule-generated list of legal moves.  No engine scores, candidate order
-    /// or green recommendation is included at this stage.
-    func proposeIndependently(
-        board inputBoard: BoardState,
-        sideToMove: PieceSide,
-        retryFeedback: String? = nil
-    ) async throws -> QwenIndependentProposalBatch {
-        var board = inputBoard
-        board.redToMove = sideToMove == .red
-        guard board.isValid else { throw QwenBoardReviewError.invalidBoard }
-        let legalMoves = board.legalMoves(for: sideToMove)
-        guard !legalMoves.isEmpty else { throw QwenBoardReviewError.invalidAdvice }
-        guard let apiKey = try loadExistingCredential(), !apiKey.isEmpty else {
-            throw QwenBoardReviewError.noCredential
-        }
-
-        let legalList = legalMoves.map(\.uci).joined(separator: ",")
-        let feedbackBlock = retryFeedback.map { "\n\n\($0)" } ?? ""
-        let prompt = """
-        你是独立思考的中国象棋棋手。局面 FEN：\(board.toFEN())
-        现在轮到\(sideToMove == .red ? "红方" : "黑方")走。请只根据局面独立思考，不要猜测历史，不要假设有任何引擎推荐。
-        以下是程序按象棋规则生成的全部合法着法，仅用于避免坐标或规则错误；它们没有评分、没有排序、不是推荐：\(legalList)
-        按你的偏好给出最多三套彼此不同的方案，顺序代表你的优先级：主攻方案、诡招/实战陷阱、稳健方案。若局面只适合一种着法，可少于三套。
-        每个 move_uci 必须从上述合法列表中原样选择。不要声称吃子或将军，除非你对此非常确定；这些事实会由本地规则另行核验。\(feedbackBlock)
-        只返回 JSON：{ "proposals": [ { "move_uci":"…", "style":"主攻|诡招|稳健", "reason":"一句理由", "plan":"一句后续计划", "confidence":0到1 } ] }
-        禁止 Markdown、代码块和额外文字。
-        """
-
-        let payload = ChatPayload(
-            model: model,
-            messages: [ChatMessage(role: "user", content: [.text(prompt)])],
-            temperature: 0.35,
-            responseFormat: ResponseFormat(type: "json_object"),
-            enableThinking: false
-        )
-        var request = URLRequest(url: endpoint)
-        request.httpMethod = "POST"
-        request.timeoutInterval = 45
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        request.httpBody = try JSONEncoder().encode(payload)
-
-        let (data, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse else {
-            throw QwenBoardReviewError.invalidResponse
-        }
-        guard (200..<300).contains(http.statusCode) else {
-            throw QwenBoardReviewError.remoteStatus(http.statusCode)
-        }
-        let envelope = try JSONDecoder().decode(ChatEnvelope.self, from: data)
-        guard let content = envelope.choices.first?.message.content,
-              let objectData = extractedJSONObject(from: content).data(using: .utf8),
-              let decoded = try? JSONDecoder().decode(IndependentAdviceJSON.self, from: objectData)
-        else {
-            throw QwenBoardReviewError.invalidResponse
-        }
-
-        var seen: Set<String> = []
-        let proposals = decoded.proposals.prefix(3).compactMap { raw -> QwenIndependentMoveProposal? in
-            guard seen.insert(raw.moveUCI).inserted,
-                  let move = UCIMove(uci: raw.moveUCI),
-                  board.isLegalMove(move, for: sideToMove)
-            else { return nil }
-            return QwenIndependentMoveProposal(
-                move: move,
-                style: raw.style.isEmpty ? "独立方案" : raw.style,
-                reason: raw.reason,
-                plan: raw.plan,
-                confidence: min(1, max(0, raw.confidence))
-            )
-        }
-        guard !proposals.isEmpty else { throw QwenBoardReviewError.invalidAdvice }
-        return QwenIndependentProposalBatch(
-            proposals: proposals,
-            modelName: envelope.model ?? model
         )
     }
 
@@ -559,26 +465,6 @@ private struct AdviceJSON: Decodable {
     enum CodingKeys: String, CodingKey {
         case moveUCI = "move_uci"
         case reason, plan, confidence
-    }
-}
-
-/// The independent-advice response deliberately contains no engine metadata.
-/// Qwen has only seen the FEN and the rule-generated legal-move list; scoring
-/// is performed later by a local verifier.
-private struct IndependentAdviceJSON: Decodable {
-    let proposals: [IndependentProposalJSON]
-}
-
-private struct IndependentProposalJSON: Decodable {
-    let moveUCI: String
-    let style: String
-    let reason: String
-    let plan: String
-    let confidence: Double
-
-    enum CodingKeys: String, CodingKey {
-        case moveUCI = "move_uci"
-        case style, reason, plan, confidence
     }
 }
 
